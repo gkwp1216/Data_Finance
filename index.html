@@ -151,11 +151,161 @@
                 </div>
             </div>
 
+            <!-- 투자 지표 섹션 -->
+            <div class="card">
+                <h2>📊 투자 의사결정 지표</h2>
+                
+                <!-- 주가 데이터 입력 폼 -->
+                <div class="stock-data-form">
+                    <div class="form-note">
+                        💡 투자 지표를 계산하려면 주가 정보를 입력하세요
+                    </div>
+                    <div class="stock-input-grid">
+                        <div class="form-group">
+                            <label for="stockPrice">현재 주가 (원)</label>
+                            <input type="number" id="stockPrice" placeholder="예: 75000" />
+                        </div>
+                        <div class="form-group">
+                            <label for="totalShares">발행주식수</label>
+                            <input type="number" id="totalShares" placeholder="예: 5969783" />
+                        </div>
+                        <div class="form-group">
+                            <label for="dividendPerShare">주당배당금 (원)</label>
+                            <input type="number" id="dividendPerShare" placeholder="예: 1500" />
+                        </div>
+                        <div class="form-group form-action">
+                            <button id="calculateMetricsBtn" class="btn btn-primary">
+                                💹 지표 계산
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 투자 지표 카드 그리드 -->
+                <div id="investmentMetricsSection" class="investment-metrics-grid hidden">
+                    <!-- 시가총액 -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h3>시가총액</h3>
+                            <span class="metric-badge" id="marketCapBadge">-</span>
+                        </div>
+                        <p class="metric-value" id="marketCapValue">-</p>
+                        <p class="metric-desc">주가 × 발행주식수</p>
+                    </div>
+
+                    <!-- PER -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h3>PER</h3>
+                            <span class="metric-badge" id="perBadge">-</span>
+                        </div>
+                        <p class="metric-value" id="perValue">-</p>
+                        <p class="metric-desc">시가총액 / 당기순이익</p>
+                        <p class="metric-eval" id="perEval"></p>
+                    </div>
+
+                    <!-- PBR -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h3>PBR</h3>
+                            <span class="metric-badge" id="pbrBadge">-</span>
+                        </div>
+                        <p class="metric-value" id="pbrValue">-</p>
+                        <p class="metric-desc">시가총액 / 자본총계</p>
+                        <p class="metric-eval" id="pbrEval"></p>
+                    </div>
+
+                    <!-- PSR -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h3>PSR</h3>
+                            <span class="metric-badge" id="psrBadge">-</span>
+                        </div>
+                        <p class="metric-value" id="psrValue">-</p>
+                        <p class="metric-desc">시가총액 / 매출액</p>
+                        <p class="metric-eval" id="psrEval"></p>
+                    </div>
+
+                    <!-- EV/EBITDA -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h3>EV/EBITDA</h3>
+                            <span class="metric-badge" id="evEbitdaBadge">-</span>
+                        </div>
+                        <p class="metric-value" id="evEbitdaValue">-</p>
+                        <p class="metric-desc">기업가치 / EBITDA</p>
+                        <p class="metric-eval" id="evEbitdaEval"></p>
+                    </div>
+
+                    <!-- 배당수익률 -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h3>배당수익률</h3>
+                            <span class="metric-badge" id="dividendYieldBadge">-</span>
+                        </div>
+                        <p class="metric-value" id="dividendYieldValue">-</p>
+                        <p class="metric-desc">(주당배당금 / 주가) × 100</p>
+                        <p class="metric-eval" id="dividendYieldEval"></p>
+                    </div>
+
+                    <!-- EPS -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h3>EPS</h3>
+                            <span class="metric-badge">주당순이익</span>
+                        </div>
+                        <p class="metric-value" id="epsValue">-</p>
+                        <p class="metric-desc">당기순이익 / 발행주식수</p>
+                    </div>
+
+                    <!-- BPS -->
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <h3>BPS</h3>
+                            <span class="metric-badge">주당순자산</span>
+                        </div>
+                        <p class="metric-value" id="bpsValue">-</p>
+                        <p class="metric-desc">자본총계 / 발행주식수</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- 차트 섹션 -->
             <div class="card">
                 <h2>📊 재무 구조 시각화</h2>
                 <div class="chart-container">
                     <canvas id="financialChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 뉴스 & 공시 섹션 -->
+            <div class="card">
+                <h2>📰 관련 뉴스 & 공시</h2>
+                
+                <!-- 탭 메뉴 -->
+                <div class="news-tabs">
+                    <button class="news-tab active" data-tab="news">뉴스</button>
+                    <button class="news-tab" data-tab="disclosure">공시</button>
+                </div>
+
+                <!-- 뉴스 피드 -->
+                <div id="newsTab" class="news-content active">
+                    <div id="newsList" class="news-list">
+                        <div class="news-loading">
+                            <div class="spinner"></div>
+                            <p>뉴스를 불러오는 중...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 공시 정보 -->
+                <div id="disclosureTab" class="news-content">
+                    <div id="disclosureList" class="news-list">
+                        <div class="news-loading">
+                            <div class="spinner"></div>
+                            <p>공시 정보를 불러오는 중...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -256,6 +406,8 @@
     </footer>
 
     <script src="watchlist.js"></script>
+    <script src="investment-metrics.js"></script>
+    <script src="news-api.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

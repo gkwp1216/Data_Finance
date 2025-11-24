@@ -1,6 +1,7 @@
 // 전역 변수
 let apiKey = 'a840a5ad65e360f78621fc44725022e66f951d3659cea20e297a7a1b21e2929a';
 let chartInstance = null;
+let currentFinancialData = null; // 현재 표시된 재무 데이터 저장
 
 // DOM 요소
 const elements = {
@@ -238,6 +239,9 @@ function displayFinancialData(data) {
     // 결과 섹션 표시
     elements.resultSection.classList.remove('hidden');
     
+    // 현재 재무 데이터 저장 (투자 지표 계산용)
+    currentFinancialData = financialData;
+    
     // 현재 기업 데이터 저장 (워치리스트용)
     currentCompanyData = {
         corpName: data.corpName,
@@ -264,6 +268,13 @@ function displayFinancialData(data) {
                 });
             }
         }
+    }
+    
+    // 뉴스 및 공시 로드
+    if (currentCompanyData && currentCompanyData.corpName) {
+        loadNews(currentCompanyData.corpName);
+        // 공시는 기업 코드가 있을 때만 로드 (현재는 샘플 데이터 사용)
+        loadDisclosure(currentCompanyData.corpCode || '00000000');
     }
     
     // 결과 섹션으로 스크롤
@@ -878,8 +889,292 @@ function removeAlert(alertId) {
     }
 }
 
+// =====================================================
+// 투자 지표 계산 및 표시
+// =====================================================
+
+// 투자 지표 초기화
+function initInvestmentMetrics() {
+    const calculateBtn = document.getElementById('calculateMetricsBtn');
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', calculateInvestmentMetrics);
+    }
+}
+
+// 투자 지표 계산
+function calculateInvestmentMetrics() {
+    if (!currentFinancialData) {
+        alert('먼저 재무정보를 조회해주세요.');
+        return;
+    }
+
+    // 입력값 가져오기
+    const stockPrice = parseFloat(document.getElementById('stockPrice').value);
+    const totalShares = parseFloat(document.getElementById('totalShares').value);
+    const dividendPerShare = parseFloat(document.getElementById('dividendPerShare').value) || 0;
+
+    // 유효성 검사
+    if (!stockPrice || stockPrice <= 0) {
+        alert('현재 주가를 입력해주세요.');
+        document.getElementById('stockPrice').focus();
+        return;
+    }
+
+    if (!totalShares || totalShares <= 0) {
+        alert('발행주식수를 입력해주세요.');
+        document.getElementById('totalShares').focus();
+        return;
+    }
+
+    // 재무 데이터 준비
+    const data = {
+        // 재무제표 데이터
+        netIncome: currentFinancialData['당기순이익'] || 0,
+        equity: currentFinancialData['자본총계'] || 0,
+        revenue: currentFinancialData['매출액'] || 0,
+        operatingIncome: currentFinancialData['영업이익'] || 0,
+        debt: (currentFinancialData['단기차입금'] || 0) + (currentFinancialData['장기차입금'] || 0),
+        cash: currentFinancialData['현금및현금성자산'] || 0,
+        
+        // 주가 데이터
+        stockPrice: stockPrice,
+        shares: totalShares,
+        dividendPerShare: dividendPerShare
+    };
+
+    // 투자 지표 계산
+    const metrics = InvestmentMetrics.calculateAllMetrics(data);
+
+    // UI 표시
+    displayInvestmentMetrics(metrics);
+}
+
+// 투자 지표 UI 표시
+function displayInvestmentMetrics(metrics) {
+    // 섹션 표시
+    const section = document.getElementById('investmentMetricsSection');
+    section.classList.remove('hidden');
+
+    // 시가총액
+    document.getElementById('marketCapValue').textContent = 
+        InvestmentMetrics.formatLargeNumber(metrics.marketCap);
+    document.getElementById('marketCapBadge').textContent = 
+        '₩' + InvestmentMetrics.formatLargeNumber(metrics.marketCap);
+
+    // PER
+    const perEval = InvestmentMetrics.evaluateMetric('per', metrics.per);
+    document.getElementById('perValue').textContent = 
+        InvestmentMetrics.formatNumber(metrics.per);
+    document.getElementById('perBadge').textContent = perEval.rating;
+    document.getElementById('perBadge').style.backgroundColor = perEval.color;
+    document.getElementById('perBadge').style.color = 'white';
+    const perEvalEl = document.getElementById('perEval');
+    perEvalEl.textContent = perEval.message;
+    perEvalEl.className = 'metric-eval ' + getRatingClass(perEval.rating);
+
+    // PBR
+    const pbrEval = InvestmentMetrics.evaluateMetric('pbr', metrics.pbr);
+    document.getElementById('pbrValue').textContent = 
+        InvestmentMetrics.formatNumber(metrics.pbr);
+    document.getElementById('pbrBadge').textContent = pbrEval.rating;
+    document.getElementById('pbrBadge').style.backgroundColor = pbrEval.color;
+    document.getElementById('pbrBadge').style.color = 'white';
+    const pbrEvalEl = document.getElementById('pbrEval');
+    pbrEvalEl.textContent = pbrEval.message;
+    pbrEvalEl.className = 'metric-eval ' + getRatingClass(pbrEval.rating);
+
+    // PSR
+    const psrEval = InvestmentMetrics.evaluateMetric('psr', metrics.psr);
+    document.getElementById('psrValue').textContent = 
+        InvestmentMetrics.formatNumber(metrics.psr);
+    document.getElementById('psrBadge').textContent = psrEval.rating;
+    document.getElementById('psrBadge').style.backgroundColor = psrEval.color;
+    document.getElementById('psrBadge').style.color = 'white';
+    const psrEvalEl = document.getElementById('psrEval');
+    psrEvalEl.textContent = psrEval.message;
+    psrEvalEl.className = 'metric-eval ' + getRatingClass(psrEval.rating);
+
+    // EV/EBITDA
+    const evEval = InvestmentMetrics.evaluateMetric('evToEbitda', metrics.evToEbitda);
+    document.getElementById('evEbitdaValue').textContent = 
+        InvestmentMetrics.formatNumber(metrics.evToEbitda);
+    document.getElementById('evEbitdaBadge').textContent = evEval.rating;
+    document.getElementById('evEbitdaBadge').style.backgroundColor = evEval.color;
+    document.getElementById('evEbitdaBadge').style.color = 'white';
+    const evEvalEl = document.getElementById('evEbitdaEval');
+    evEvalEl.textContent = evEval.message;
+    evEvalEl.className = 'metric-eval ' + getRatingClass(evEval.rating);
+
+    // 배당수익률
+    if (metrics.dividendYield) {
+        const divEval = InvestmentMetrics.evaluateMetric('dividendYield', metrics.dividendYield);
+        document.getElementById('dividendYieldValue').textContent = 
+            InvestmentMetrics.formatNumber(metrics.dividendYield) + '%';
+        document.getElementById('dividendYieldBadge').textContent = divEval.rating;
+        document.getElementById('dividendYieldBadge').style.backgroundColor = divEval.color;
+        document.getElementById('dividendYieldBadge').style.color = 'white';
+        const divEvalEl = document.getElementById('dividendYieldEval');
+        divEvalEl.textContent = divEval.message;
+        divEvalEl.className = 'metric-eval ' + getRatingClass(divEval.rating);
+    } else {
+        document.getElementById('dividendYieldValue').textContent = '-';
+        document.getElementById('dividendYieldBadge').textContent = 'N/A';
+        document.getElementById('dividendYieldEval').textContent = '배당 정보 없음';
+    }
+
+    // EPS
+    document.getElementById('epsValue').textContent = 
+        '₩' + InvestmentMetrics.formatNumber(metrics.eps, 0);
+
+    // BPS
+    document.getElementById('bpsValue').textContent = 
+        '₩' + InvestmentMetrics.formatNumber(metrics.bps, 0);
+
+    // 결과로 스크롤
+    section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// 평가 등급에 따른 CSS 클래스 반환
+function getRatingClass(rating) {
+    const negativeRatings = ['매우 저평가', '저평가', '낮음'];
+    const positiveRatings = ['고평가', '다소 고평가', '양호', '우수'];
+    const warningRatings = ['적정', '보통'];
+    
+    if (negativeRatings.includes(rating)) return 'negative';
+    if (positiveRatings.includes(rating)) return 'positive';
+    if (warningRatings.includes(rating)) return 'warning';
+    return 'neutral';
+}
+
+// =====================================================
+// 뉴스 & 공시 기능
+// =====================================================
+
+// 뉴스 초기화
+function initNews() {
+    // 탭 전환 이벤트
+    const newsTabs = document.querySelectorAll('.news-tab');
+    newsTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            switchNewsTab(tabName);
+        });
+    });
+}
+
+// 뉴스 탭 전환
+function switchNewsTab(tabName) {
+    // 탭 버튼 활성화
+    document.querySelectorAll('.news-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+    
+    // 콘텐츠 표시
+    document.getElementById('newsTab').classList.toggle('active', tabName === 'news');
+    document.getElementById('disclosureTab').classList.toggle('active', tabName === 'disclosure');
+}
+
+// 뉴스 로드
+async function loadNews(companyName) {
+    const newsList = document.getElementById('newsList');
+    newsList.innerHTML = '<div class="news-loading"><div class="spinner"></div><p>뉴스를 불러오는 중...</p></div>';
+    
+    try {
+        const news = await NewsAPI.searchNaverNews(companyName, 5);
+        displayNews(news);
+    } catch (error) {
+        console.error('뉴스 로드 실패:', error);
+        newsList.innerHTML = '<div class="news-empty"><div class="news-empty-icon">📰</div><p>뉴스를 불러올 수 없습니다.</p></div>';
+    }
+}
+
+// 뉴스 표시
+function displayNews(news) {
+    const newsList = document.getElementById('newsList');
+    
+    if (!news || news.length === 0) {
+        newsList.innerHTML = '<div class="news-empty"><div class="news-empty-icon">📰</div><p>관련 뉴스가 없습니다.</p></div>';
+        return;
+    }
+    
+    newsList.innerHTML = news.map(item => `
+        <div class="news-item" onclick="window.open('${item.link}', '_blank')">
+            <div class="news-header">
+                <h3 class="news-title">${item.title}</h3>
+                <span class="news-time">${NewsAPI.getRelativeTime(item.pubDate)}</span>
+            </div>
+            <p class="news-description">${item.description}</p>
+            <div class="news-footer">
+                <span class="news-source">${item.source}</span>
+                <a href="${item.link}" class="news-link" target="_blank" onclick="event.stopPropagation()">
+                    자세히 보기 →
+                </a>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 공시 로드
+async function loadDisclosure(corpCode) {
+    const disclosureList = document.getElementById('disclosureList');
+    disclosureList.innerHTML = '<div class="news-loading"><div class="spinner"></div><p>공시 정보를 불러오는 중...</p></div>';
+    
+    try {
+        // 최근 3개월 공시 조회
+        const endDate = new Date();
+        const beginDate = new Date();
+        beginDate.setMonth(beginDate.getMonth() - 3);
+        
+        const endDateStr = endDate.toISOString().slice(0, 10).replace(/-/g, '');
+        const beginDateStr = beginDate.toISOString().slice(0, 10).replace(/-/g, '');
+        
+        const disclosure = await NewsAPI.searchDartDisclosure(corpCode, beginDateStr, endDateStr);
+        displayDisclosure(disclosure);
+    } catch (error) {
+        console.error('공시 로드 실패:', error);
+        disclosureList.innerHTML = '<div class="news-empty"><div class="news-empty-icon">📋</div><p>공시 정보를 불러올 수 없습니다.</p></div>';
+    }
+}
+
+// 공시 표시
+function displayDisclosure(disclosure) {
+    const disclosureList = document.getElementById('disclosureList');
+    
+    if (!disclosure || disclosure.length === 0) {
+        disclosureList.innerHTML = '<div class="news-empty"><div class="news-empty-icon">📋</div><p>최근 공시가 없습니다.</p></div>';
+        return;
+    }
+    
+    const typeIcons = {
+        financial: '📊',
+        dividend: '💰',
+        capital: '💵',
+        merger: '🤝',
+        disclosure: '📢',
+        other: '📄'
+    };
+    
+    disclosureList.innerHTML = disclosure.map(item => `
+        <div class="disclosure-item" onclick="window.open('${item.link}', '_blank')">
+            <div class="disclosure-type ${item.type}">
+                ${typeIcons[item.type] || typeIcons.other}
+            </div>
+            <div class="disclosure-content">
+                <h3 class="disclosure-title">${item.title}</h3>
+                <div class="disclosure-meta">
+                    <span>${item.corpName}</span>
+                    <span>${item.date}</span>
+                    <span>${item.source}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', () => {
     init();
     initWatchlistUI();
+    initInvestmentMetrics();
+    initNews();
 });
