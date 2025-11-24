@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="금융위원회 기업 재무정보 실시간 조회 시스템">
+    <meta name="keywords" content="금융위원회, API, 재무정보, 기업분석, 재무제표">
+    <title>🏦 기업 재무정보 조회 시스템</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1>🏦 기업 재무정보 조회 시스템</h1>
+                    <p class="subtitle">금융위원회 공공 API 기반 실시간 재무제표 조회</p>
+                </div>
+                <div class="header-right">
+                    <button id="watchlistBtn" class="btn btn-watchlist">
+                        ⭐ 관심 기업 (<span id="watchlistCount">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- 메인 레이아웃: 검색(왼쪽) + 주요 기업(오른쪽) -->
+        <div id="initialLayout" class="main-layout">
+            <!-- 왼쪽: 기업 검색 섹션 -->
+            <aside class="search-sidebar">
+                <div class="card sticky-card">
+                    <h2>🔍 기업 검색</h2>
+                    <div class="search-form">
+                        <div class="form-group">
+                            <label for="corpName">기업명</label>
+                            <input type="text" id="corpName" placeholder="예: 삼성전자" />
+                        </div>
+                        <div class="form-group">
+                            <label for="bizrNo">사업자등록번호 (선택)</label>
+                            <input type="text" id="bizrNo" placeholder="예: 1234567890" />
+                        </div>
+                        <div class="form-group">
+                            <label for="bsnsYear">사업연도</label>
+                            <select id="bsnsYear">
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                                <option value="2021">2021</option>
+                                <option value="2020">2020</option>
+                                <option value="2019">2019</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="reprtCode">보고서 코드</label>
+                            <select id="reprtCode">
+                                <option value="11011">사업보고서</option>
+                                <option value="11012">반기보고서</option>
+                                <option value="11013">1분기보고서</option>
+                                <option value="11014">3분기보고서</option>
+                            </select>
+                        </div>
+                        <button id="searchBtn" class="btn btn-primary btn-large">재무정보 조회</button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 오른쪽: 주요 기업 섹션 -->
+            <section class="featured-section">
+                <div class="card">
+                    <h2>🏢 주요 기업</h2>
+                    <p class="section-description">기업을 클릭하면 최신 재무정보를 조회할 수 있습니다</p>
+                    <div id="featuredCompanies" class="featured-companies">
+                        <!-- 동적으로 생성됨 -->
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 결과 표시용 레이아웃 -->
+        <div id="resultLayout" class="result-layout hidden">
+            <div class="content-area">
+
+            <!-- 로딩 인디케이터 -->
+            <div id="loadingIndicator" class="loading-indicator hidden">
+                <div class="spinner"></div>
+                <p>데이터를 불러오는 중...</p>
+            </div>
+
+            <!-- 결과 표시 섹션 -->
+            <section id="resultSection" class="section result-section hidden">
+            <!-- 기업 개요 -->
+            <div class="card">
+                <div class="card-header-with-action">
+                    <div class="card-header-left">
+                        <button id="backBtn" class="btn btn-back" title="메인으로 돌아가기">← 메인</button>
+                        <h2>📊 재무상태표</h2>
+                    </div>
+                    <div class="card-header-right">
+                        <button id="addToWatchlistBtn" class="btn btn-outline btn-add-watchlist">
+                            ⭐ 관심 기업 추가
+                        </button>
+                    </div>
+                </div>
+                <div id="companyOverview" class="company-overview"></div>
+            </div>
+
+            <!-- 재무비율과 상세정보 그리드 레이아웃 -->
+            <div class="financial-grid">
+                <!-- 왼쪽: 재무비율 카드 (2x2) -->
+                <div class="ratio-cards" id="ratioCards">
+                    <div class="ratio-card">
+                        <h3>부채비율</h3>
+                        <p class="ratio-value" id="debtRatio">-</p>
+                        <p class="ratio-desc">부채총계 / 자본총계 × 100</p>
+                    </div>
+                    <div class="ratio-card">
+                        <h3>자기자본비율</h3>
+                        <p class="ratio-value" id="equityRatio">-</p>
+                        <p class="ratio-desc">자본총계 / 자산총계 × 100</p>
+                    </div>
+                    <div class="ratio-card">
+                        <h3>유동비율</h3>
+                        <p class="ratio-value" id="currentRatio">-</p>
+                        <p class="ratio-desc">유동자산 / 유동부채 × 100</p>
+                    </div>
+                    <div class="ratio-card">
+                        <h3>ROE</h3>
+                        <p class="ratio-value" id="roe">-</p>
+                        <p class="ratio-desc">당기순이익 / 자본총계 × 100</p>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 상세 재무제표 테이블 -->
+                <div class="card financial-detail-card">
+                    <h2>📈 상세 재무정보</h2>
+                    <div class="table-responsive">
+                        <table id="financialTable" class="financial-table">
+                            <thead>
+                                <tr>
+                                    <th>계정과목</th>
+                                    <th>당기금액 (원)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="financialTableBody">
+                                <!-- 동적으로 생성 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 차트 섹션 -->
+            <div class="card">
+                <h2>📊 재무 구조 시각화</h2>
+                <div class="chart-container">
+                    <canvas id="financialChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+                <!-- 에러 메시지 -->
+                <div id="errorMessage" class="error-message hidden">
+                    <p id="errorText"></p>
+                </div>
+            </div><!-- result-content 종료 -->
+        </div><!-- resultLayout 종료 -->
+    </main>
+
+    <!-- 워치리스트 사이드바 -->
+    <div id="watchlistSidebar" class="watchlist-sidebar">
+        <div class="watchlist-header">
+            <h2>⭐ 관심 기업</h2>
+            <button id="closeWatchlist" class="btn-icon" title="닫기">✕</button>
+        </div>
+        <div class="watchlist-content">
+            <div id="watchlistEmpty" class="watchlist-empty">
+                <p>관심 기업이 없습니다</p>
+                <p class="text-muted">검색 결과에서 ⭐ 버튼을 눌러 추가하세요</p>
+            </div>
+            <div id="watchlistItems" class="watchlist-items"></div>
+        </div>
+    </div>
+
+    <!-- 워치리스트 상세 모달 -->
+    <div id="watchlistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalCompanyName">기업명</h2>
+                <button id="closeModal" class="btn-icon">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- 북마크 및 태그 -->
+                <div class="modal-section">
+                    <div class="bookmark-section">
+                        <button id="modalBookmarkBtn" class="btn btn-outline">☆ 북마크</button>
+                    </div>
+                    <div class="tags-section">
+                        <label>태그</label>
+                        <div id="modalTags" class="tags-container"></div>
+                        <input type="text" id="tagInput" placeholder="태그 입력 후 Enter" class="tag-input" />
+                    </div>
+                </div>
+
+                <!-- 메모 -->
+                <div class="modal-section">
+                    <label>메모</label>
+                    <textarea id="modalMemo" rows="3" placeholder="메모를 입력하세요..."></textarea>
+                </div>
+
+                <!-- 알림 설정 -->
+                <div class="modal-section">
+                    <label>알림 설정</label>
+                    <div class="alert-form">
+                        <select id="alertMetric">
+                            <option value="">지표 선택</option>
+                            <option value="debtRatio">부채비율</option>
+                            <option value="equityRatio">자기자본비율</option>
+                            <option value="currentRatio">유동비율</option>
+                            <option value="roe">ROE</option>
+                        </select>
+                        <select id="alertCondition">
+                            <option value="above">이상</option>
+                            <option value="below">이하</option>
+                        </select>
+                        <input type="number" id="alertThreshold" placeholder="임계값" />
+                        <button id="addAlertBtn" class="btn btn-sm">추가</button>
+                    </div>
+                    <div id="alertList" class="alert-list"></div>
+                </div>
+
+                <!-- 최근 재무 정보 -->
+                <div class="modal-section">
+                    <label>최근 재무 정보</label>
+                    <div id="modalFinancialData" class="financial-summary">
+                        <p class="text-muted">데이터가 없습니다</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="removeFromWatchlist" class="btn btn-danger">워치리스트에서 제거</button>
+                <button id="saveModal" class="btn btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 오버레이 -->
+    <div id="overlay" class="overlay"></div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 기업 재무정보 조회 시스템. 금융위원회 공공데이터 활용.</p>
+            <p class="footer-note">※ 본 서비스는 공공데이터포털의 금융위원회_기업 재무정보 API를 활용합니다.</p>
+        </div>
+    </footer>
+
+    <script src="watchlist.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
