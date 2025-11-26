@@ -277,6 +277,12 @@ function displayFinancialData(data) {
         loadDisclosure(currentCompanyData.corpCode || '00000000');
     }
     
+    // 재무 건전성 점수 계산 및 표시
+    calculateAndDisplayHealthScore();
+    
+    // 주식 데이터 자동 로드
+    loadStockDataAutomatically();
+    
     // 결과 섹션으로 스크롤
     elements.resultSection.scrollIntoView({ behavior: 'smooth' });
 }
@@ -901,6 +907,63 @@ function initInvestmentMetrics() {
     }
 }
 
+// 주식 데이터 자동 불러오기
+async function loadStockDataAutomatically() {
+    if (!currentCompanyData) {
+        return;
+    }
+
+    const corpName = currentCompanyData.corpName;
+
+    try {
+        console.log(`주식 정보 자동 로딩 중: ${corpName}`);
+
+        // Stock API 호출
+        const result = await StockAPI.getStockInfo(corpName);
+
+        if (!result || !result.success) {
+            console.warn('주식 정보를 찾을 수 없습니다:', result?.message);
+            return;
+        }
+
+        const stockInfo = result.data;
+        console.log('주식 데이터 조회 완료:', stockInfo);
+
+        // 폼 필드 자동 입력
+        const stockPriceInput = document.getElementById('stockPrice');
+        const totalSharesInput = document.getElementById('totalShares');
+        const dividendPerShareInput = document.getElementById('dividendPerShare');
+
+        if (stockInfo.stockPrice && stockPriceInput) {
+            stockPriceInput.value = Math.round(stockInfo.stockPrice);
+            console.log('주가 입력:', stockInfo.stockPrice);
+        }
+
+        if (stockInfo.totalShares && totalSharesInput) {
+            totalSharesInput.value = Math.round(stockInfo.totalShares);
+            console.log('발행주식수 입력:', stockInfo.totalShares);
+        }
+
+        if (stockInfo.dividendPerShare !== undefined && dividendPerShareInput) {
+            dividendPerShareInput.value = Math.round(stockInfo.dividendPerShare);
+            console.log('주당배당금 입력:', stockInfo.dividendPerShare);
+        }
+
+        console.log('✅ 주식 정보 자동 로딩 완료');
+
+        // 데이터가 모두 입력되었으면 자동으로 지표 계산
+        if (stockInfo.stockPrice && stockInfo.totalShares) {
+            setTimeout(() => {
+                console.log('투자 지표 자동 계산 시작');
+                calculateInvestmentMetrics();
+            }, 500);
+        }
+
+    } catch (error) {
+        console.error('주식 데이터 불러오기 실패:', error);
+    }
+}
+
 // 투자 지표 계산
 function calculateInvestmentMetrics() {
     if (!currentFinancialData) {
@@ -947,6 +1010,18 @@ function calculateInvestmentMetrics() {
 
     // UI 표시
     displayInvestmentMetrics(metrics);
+    
+    // 투자 지표를 currentCompanyData에 저장
+    if (currentCompanyData) {
+        currentCompanyData.per = metrics.per.value;
+        currentCompanyData.pbr = metrics.pbr.value;
+        currentCompanyData.psr = metrics.psr.value;
+        currentCompanyData.evToEbitda = metrics.evToEbitda.value;
+        currentCompanyData.dividendYield = metrics.dividendYield.value;
+    }
+    
+    // 건전성 점수 재계산
+    calculateAndDisplayHealthScore();
 }
 
 // 투자 지표 UI 표시
@@ -1047,6 +1122,150 @@ function getRatingClass(rating) {
 }
 
 // =====================================================
+// 재무 건전성 점수 기능
+// =====================================================
+
+// 건전성 점수 계산 및 표시
+function calculateAndDisplayHealthScore() {
+    const healthSection = document.getElementById('healthScoreSection');
+    
+    if (!currentFinancialData || !currentCompanyData) {
+        healthSection.style.display = 'none';
+        return;
+    }
+
+    // 투자 지표가 계산되어 있는지 확인
+    const hasInvestmentMetrics = currentCompanyData.per !== undefined;
+    
+    // 건전성 점수 계산
+    const healthData = {
+        roe: currentCompanyData.roe || 0,
+        debtRatio: currentCompanyData.debtRatio || 0,
+        currentRatio: currentCompanyData.currentRatio || 0,
+        per: hasInvestmentMetrics ? currentCompanyData.per : 0,
+        pbr: hasInvestmentMetrics ? currentCompanyData.pbr : 0
+    };
+    
+    const healthScore = FinancialHealth.calculateHealthScore(healthData);
+    
+    // 섹션 표시
+    healthSection.style.display = 'block';
+    
+    // 종합 점수 표시
+    displayHealthScore(healthScore);
+    
+    // 카테고리별 점수 표시
+    displayCategoryScores(healthScore.category);
+    
+    // 종합 분석 표시
+    displayHealthAnalysis(healthScore.analysis);
+    
+    // 투자 추천 표시
+    displayRecommendation(healthScore.recommendation);
+}
+
+// 종합 점수 게이지 표시
+function displayHealthScore(healthScore) {
+    const scoreValue = document.getElementById('healthScoreValue');
+    const gradeBadge = document.getElementById('healthGrade');
+    const gaugeProgress = document.getElementById('gaugeProgress');
+    
+    // 점수 애니메이션
+    let currentScore = 0;
+    const targetScore = healthScore.totalScore;
+    const duration = 1500;
+    const steps = 60;
+    const increment = targetScore / steps;
+    
+    const scoreInterval = setInterval(() => {
+        currentScore += increment;
+        if (currentScore >= targetScore) {
+            currentScore = targetScore;
+            clearInterval(scoreInterval);
+        }
+        scoreValue.textContent = Math.round(currentScore);
+    }, duration / steps);
+    
+    // 등급 표시
+    gradeValue.textContent = healthScore.grade;
+    gradeValue.style.background = `linear-gradient(135deg, ${FinancialHealth.getGradeColor(healthScore.grade)}, ${FinancialHealth.getGradeColor(healthScore.grade)}dd)`;
+    
+    // 게이지 애니메이션 (251.2는 반원의 둘레)
+    const progress = (healthScore.totalScore / 100) * 251.2;
+    gaugeProgress.style.strokeDashoffset = 251.2 - progress;
+    gaugeProgress.style.stroke = FinancialHealth.getGradeColor(healthScore.grade);
+}
+
+// 카테고리별 점수 표시
+function displayCategoryScores(categories) {
+    const categoryKeys = {
+        profitability: { name: '수익성', maxScore: 30 },
+        stability: { name: '안정성', maxScore: 30 },
+        growth: { name: '성장성', maxScore: 20 },
+        valuation: { name: '밸류에이션', maxScore: 20 }
+    };
+    
+    Object.entries(categoryKeys).forEach(([key, info]) => {
+        const category = categories[key];
+        
+        // 점수 표시
+        document.getElementById(`${key}Score`).textContent = `${Math.round(category.score)}/${info.maxScore}`;
+        document.getElementById(`${key}Percent`).textContent = `${category.percentage}%`;
+        
+        // 진행 바 애니메이션
+        setTimeout(() => {
+            document.getElementById(`${key}Bar`).style.width = `${category.percentage}%`;
+        }, 100);
+        
+        // 요약 표시
+        document.getElementById(`${key}Summary`).textContent = category.summary;
+        
+        // 상세 정보 표시
+        const detailsContainer = document.getElementById(`${key}Details`);
+        detailsContainer.innerHTML = category.details.map(detail => `
+            <div class="detail-item">
+                <span class="detail-metric">${detail.metric}</span>
+                <span class="detail-value">${typeof detail.value === 'number' ? detail.value.toFixed(2) : detail.value}</span>
+                <span class="detail-rating ${getRatingClass(detail.rating)}">${detail.rating}</span>
+            </div>
+        `).join('');
+    });
+}
+
+// 건전성 분석 표시
+function displayHealthAnalysis(analysis) {
+    const analysisContainer = document.getElementById('healthAnalysis');
+    
+    const iconMap = {
+        strength: '✅',
+        weakness: '⚠️',
+        overall: '📊'
+    };
+    
+    analysisContainer.innerHTML = analysis.map(item => `
+        <div class="analysis-item ${item.type}">
+            <div class="analysis-icon">${iconMap[item.type]}</div>
+            <div class="analysis-message">${item.message}</div>
+        </div>
+    `).join('');
+}
+
+// 투자 추천 표시
+function displayRecommendation(recommendation) {
+    document.getElementById('recommendationRating').textContent = recommendation.rating;
+    document.getElementById('recommendationReason').textContent = recommendation.reason;
+}
+
+// 상세 평가 등급 CSS 클래스
+function getRatingClass(rating) {
+    if (rating.includes('매우 우수') || rating.includes('매우 안정') || rating.includes('매우 저평가')) return 'excellent';
+    if (rating.includes('우수') || rating.includes('안정') || rating.includes('저평가') || rating.includes('고성장')) return 'good';
+    if (rating.includes('양호') || rating.includes('적정') || rating.includes('성장')) return 'fair';
+    if (rating.includes('주의') || rating.includes('보통') || rating.includes('고평가')) return 'caution';
+    return 'poor';
+}
+
+// =====================================================
 // 뉴스 & 공시 기능
 // =====================================================
 
@@ -1055,7 +1274,9 @@ function initNews() {
     // 탭 전환 이벤트
     const newsTabs = document.querySelectorAll('.news-tab');
     newsTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const tabName = tab.dataset.tab;
             switchNewsTab(tabName);
         });
@@ -1098,7 +1319,7 @@ function displayNews(news) {
     }
     
     newsList.innerHTML = news.map(item => `
-        <div class="news-item" onclick="window.open('${item.link}', '_blank')">
+        <div class="news-item">
             <div class="news-header">
                 <h3 class="news-title">${item.title}</h3>
                 <span class="news-time">${NewsAPI.getRelativeTime(item.pubDate)}</span>
@@ -1106,7 +1327,7 @@ function displayNews(news) {
             <p class="news-description">${item.description}</p>
             <div class="news-footer">
                 <span class="news-source">${item.source}</span>
-                <a href="${item.link}" class="news-link" target="_blank" onclick="event.stopPropagation()">
+                <a href="${item.link}" class="news-link" target="_blank">
                     자세히 보기 →
                 </a>
             </div>

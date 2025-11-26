@@ -158,7 +158,7 @@
                 <!-- 주가 데이터 입력 폼 -->
                 <div class="stock-data-form">
                     <div class="form-note">
-                        💡 투자 지표를 계산하려면 주가 정보를 입력하세요
+                        💡 재무정보 조회 시 주가 정보가 자동으로 입력됩니다
                     </div>
                     <div class="stock-input-grid">
                         <div class="form-group">
@@ -278,14 +278,116 @@
                 </div>
             </div>
 
+            <!-- 재무 건전성 점수 섹션 -->
+            <div class="card" id="healthScoreSection" style="display: none;">
+                <h2>💊 재무 건전성 분석</h2>
+                
+                <!-- 종합 점수 -->
+                <div class="health-score-main">
+                    <div class="health-score-gauge">
+                        <div class="gauge-container">
+                            <svg class="gauge-svg" viewBox="0 0 200 120">
+                                <path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#eee" stroke-width="20"/>
+                                <path id="gaugeProgress" class="gauge-progress" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#4361ee" stroke-width="20" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+                            </svg>
+                            <div class="gauge-value">
+                                <div class="score-number" id="healthScoreValue">0</div>
+                                <div class="score-label">점</div>
+                            </div>
+                        </div>
+                        <div class="grade-badge" id="healthGrade">-</div>
+                    </div>
+                    <div class="health-score-info">
+                        <div class="recommendation-box">
+                            <div class="recommendation-label">투자 추천</div>
+                            <div class="recommendation-value" id="recommendationRating">-</div>
+                            <div class="recommendation-reason" id="recommendationReason">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 카테고리별 점수 -->
+                <div class="health-categories">
+                    <div class="category-item">
+                        <div class="category-header">
+                            <span class="category-icon">💰</span>
+                            <span class="category-name">수익성</span>
+                            <span class="category-score" id="profitabilityScore">0/30</span>
+                        </div>
+                        <div class="category-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="profitabilityBar" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" id="profitabilityPercent">0%</span>
+                        </div>
+                        <div class="category-summary" id="profitabilitySummary">-</div>
+                        <div class="category-details" id="profitabilityDetails"></div>
+                    </div>
+
+                    <div class="category-item">
+                        <div class="category-header">
+                            <span class="category-icon">🛡️</span>
+                            <span class="category-name">안정성</span>
+                            <span class="category-score" id="stabilityScore">0/30</span>
+                        </div>
+                        <div class="category-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="stabilityBar" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" id="stabilityPercent">0%</span>
+                        </div>
+                        <div class="category-summary" id="stabilitySummary">-</div>
+                        <div class="category-details" id="stabilityDetails"></div>
+                    </div>
+
+                    <div class="category-item">
+                        <div class="category-header">
+                            <span class="category-icon">📈</span>
+                            <span class="category-name">성장성</span>
+                            <span class="category-score" id="growthScore">0/20</span>
+                        </div>
+                        <div class="category-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="growthBar" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" id="growthPercent">0%</span>
+                        </div>
+                        <div class="category-summary" id="growthSummary">-</div>
+                        <div class="category-details" id="growthDetails"></div>
+                    </div>
+
+                    <div class="category-item">
+                        <div class="category-header">
+                            <span class="category-icon">💎</span>
+                            <span class="category-name">밸류에이션</span>
+                            <span class="category-score" id="valuationScore">0/20</span>
+                        </div>
+                        <div class="category-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="valuationBar" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-percent" id="valuationPercent">0%</span>
+                        </div>
+                        <div class="category-summary" id="valuationSummary">-</div>
+                        <div class="category-details" id="valuationDetails"></div>
+                    </div>
+                </div>
+
+                <!-- 종합 분석 -->
+                <div class="health-analysis">
+                    <h3>📋 종합 분석</h3>
+                    <div id="healthAnalysis" class="analysis-list"></div>
+                </div>
+            </div>
+
             <!-- 뉴스 & 공시 섹션 -->
             <div class="card">
                 <h2>📰 관련 뉴스 & 공시</h2>
                 
                 <!-- 탭 메뉴 -->
                 <div class="news-tabs">
-                    <button class="news-tab active" data-tab="news">뉴스</button>
-                    <button class="news-tab" data-tab="disclosure">공시</button>
+                    <button type="button" class="news-tab active" data-tab="news">뉴스</button>
+                    <button type="button" class="news-tab" data-tab="disclosure">공시</button>
                 </div>
 
                 <!-- 뉴스 피드 -->
@@ -407,6 +509,8 @@
 
     <script src="watchlist.js"></script>
     <script src="investment-metrics.js"></script>
+    <script src="financial-health.js"></script>
+    <script src="stock-api.js"></script>
     <script src="news-api.js"></script>
     <script src="app.js"></script>
 </body>

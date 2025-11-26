@@ -1,6 +1,6 @@
 # 🚀 고급 기능 개발 로드맵
 
-## Phase 1: 맞춤형 대시보드 (1-2주)
+## Phase 1: 맞춤형 대시보드 (1-2주) 📍 **다음 작업**
 
 ### 1.1 위젯 시스템 설계
 ```javascript
@@ -37,7 +37,7 @@ const widget = {
 
 ---
 
-## Phase 2: 관심 기업 모니터링 (1주)
+## Phase 2: 관심 기업 모니터링 (1주) ✅ **완료**
 
 ### 2.1 데이터 구조
 ```javascript
@@ -79,50 +79,9 @@ const watchlist = [
 
 ---
 
-## Phase 3: 분석 리포트 자동 생성 (2주)
+## Phase 4: 투자 의사결정 지표 (1-2주) ✅ **완료**
 
-### 3.1 PDF 리포트 (jsPDF)
-```javascript
-// 리포트 구조
-- 표지 (기업명, 보고서 날짜)
-- 요약 (주요 지표 요약)
-- 재무 비율 분석
-- 차트 (자산/부채/자본 추이)
-- 업종 평균 비교
-- 투자 추천 (AI 분석 결과)
-```
-
-### 3.2 엑셀 내보내기 (SheetJS)
-- 재무제표 원본 데이터
-- 계산된 비율 데이터
-- 시계열 데이터 (여러 연도)
-- 차트 데이터
-
-### 3.3 자동 코멘트 생성
-```javascript
-// 분석 로직
-function generateComments(financialData) {
-  const comments = [];
-  
-  // 부채비율 분석
-  if (data.debtRatio > 200) {
-    comments.push('⚠️ 부채비율이 높아 재무 안정성에 주의가 필요합니다.');
-  }
-  
-  // ROE 분석
-  if (data.roe > 15) {
-    comments.push('✅ 높은 ROE로 수익성이 우수합니다.');
-  }
-  
-  return comments;
-}
-```
-
----
-
-## Phase 4: 투자 의사결정 지표 (1-2주)
-
-### 4.1 추가 지표 계산
+### 4.1 추가 지표 계산 ✅
 ```javascript
 // PER (주가수익비율)
 PER = 주가 / 주당순이익(EPS)
@@ -153,9 +112,9 @@ EBITDA = 영업이익 + 감가상각비
 
 ---
 
-## Phase 5: 기업 뉴스 연동 (1주)
+## Phase 5: 기업 뉴스 연동 (1주) ✅ **완료 (2025-11-26)**
 
-### 5.1 API 연동
+### 5.1 API 연동 ✅
 **네이버 검색 API**
 ```javascript
 // 네이버 뉴스 검색
@@ -179,11 +138,47 @@ const params = {
 };
 ```
 
-### 5.2 기능
-- 실시간 뉴스 피드
-- 공시 정보 타임라인
-- 중요 공시 알림 (유상증자, 배당, 합병 등)
-- 재무제표 발표일 자동 알림
+### 5.2 기능 ✅
+- ✅ 실시간 뉴스 피드 (Naver News API 연동)
+- ✅ 공시 정보 타임라인 (DART API 연동)
+- ✅ 뉴스/공시 탭 전환 UI
+- ✅ 뉴스 카드 디자인 (호버 효과, 좌측 보더 애니메이션)
+- ✅ 공시 타입별 색상 구분 (재무/배당/자본/합병)
+- ✅ 로딩 상태 및 빈 상태 처리
+- ⏳ 중요 공시 알림 (유상증자, 배당, 합병 등) - 향후 구현
+- ⏳ 재무제표 발표일 자동 알림 - 향후 구현
+
+### 5.3 구현 내역
+**파일 생성/수정:**
+- ✅ `news-api.js` - 뉴스/공시 API 통합 모듈 (400+ 라인)
+- ✅ `proxy-server.js` - 네이버 API 프록시 서버 (Node.js/Express)
+- ✅ `package.json` - 프록시 서버 의존성 관리
+- ✅ `index.html` - 뉴스 섹션 추가 (탭, 피드, 공시 리스트)
+- ✅ `style.css` - 뉴스 스타일링 (+200 라인, 총 1800+ 라인)
+- ✅ `app.js` - 뉴스 로드 및 표시 로직 통합 (+150 라인)
+
+**주요 기능:**
+- `NewsAPI.searchNaverNews()` - 네이버 뉴스 검색 (실제 API 연동)
+- `NewsAPI.searchDartDisclosure()` - DART 공시 조회
+- `loadNews(companyName)` - 기업별 뉴스 로드
+- `loadDisclosure(corpCode)` - 기업별 공시 로드
+- `switchNewsTab(tabName)` - 탭 전환
+- `displayNews(news)` - 뉴스 렌더링
+- `displayDisclosure(disclosure)` - 공시 렌더링
+
+**프록시 서버 구축:**
+- ✅ Node.js/Express 기반 프록시 서버
+- ✅ 네이버 API 키 통합 (Client ID & Secret)
+- ✅ CORS 처리
+- ✅ 에러 핸들링 및 폴백
+- ✅ 서버 상태 확인 엔드포인트
+
+**디자인 특징:**
+- 그라디언트 탭 인디케이터 (primary → secondary)
+- 뉴스 카드 호버 시 좌측 보더 확장 + translateX 효과
+- 공시 타입별 원형 아이콘 (60px, 그라디언트 배경)
+- 모바일 반응형 레이아웃
+- 실제 뉴스 링크 연동
 
 ---
 
@@ -257,11 +252,6 @@ function getInvestmentRating(healthScore, valuation) {
 - 📦 Sortable.js (드래그 앤 드롭)
 - 📦 Gridstack.js (대시보드 그리드)
 
-### 리포트 생성
-- 📦 jsPDF (PDF 생성)
-- 📦 html2canvas (HTML → 이미지)
-- 📦 SheetJS (xlsx) (엑셀 생성)
-
 ### 유틸리티
 - 📦 date-fns (날짜 처리)
 - 📦 lodash (데이터 처리)
@@ -270,44 +260,47 @@ function getInvestmentRating(healthScore, valuation) {
 
 ## 🎯 구현 우선순위
 
-### 🔴 High Priority (1-2주 내)
-1. ✅ 워치리스트 기본 기능
-2. ✅ 대시보드 레이아웃
-3. ✅ 투자 지표 계산 (PER, PBR)
+### 🔴 High Priority (1-2주 내) ✅ **완료**
+1. ✅ 워치리스트 기본 기능 (Phase 2 완료)
+2. ✅ 투자 지표 계산 (PER, PBR, PSR, EV/EBITDA, 배당수익률)
+3. ✅ 뉴스 API 연동 (Phase 5 완료)
 
-### 🟡 Medium Priority (3-4주 내)
-4. ⏳ PDF 리포트 생성
-5. ⏳ 뉴스 API 연동
-6. ⏳ 재무 건전성 점수
+### 🟡 Medium Priority (3-4주 내) 🔄 **다음 작업**
+4. 📍 **대시보드 페이지 생성** (Phase 1)
+5. ⏳ 재무 건전성 점수 (Phase 6)
 
 ### 🟢 Low Priority (5주+)
-7. ⏳ AI 추천 알고리즘
-8. ⏳ 이상 패턴 감지
-9. ⏳ 고급 차트 (D3.js)
+6. ⏳ AI 추천 알고리즘 (Phase 6)
+7. ⏳ 이상 패턴 감지 (Phase 6)
+8. ⏳ 고급 차트 (D3.js)
 
 ---
 
-## 📁 파일 구조 (예상)
+## 📁 파일 구조 (현재)
 
 ```
 Finance/
-├── index.html              ✅ 기본 검색 페이지
-├── dashboard.html          📦 대시보드 페이지
-├── style.css               ✅ 기본 스타일
+├── index.html              ✅ 기본 검색 페이지 (1200+ 라인)
+├── dashboard.html          📦 대시보드 페이지 (다음 작업)
+├── style.css               ✅ 기본 스타일 (1800+ 라인)
 ├── dashboard.css           📦 대시보드 스타일
-├── app.js                  ✅ 기본 앱 로직
+├── app.js                  ✅ 기본 앱 로직 (1200+ 라인)
 ├── dashboard.js            📦 대시보드 로직
-├── watchlist.js            📦 워치리스트 관리
-├── report-generator.js     📦 리포트 생성
-├── investment-metrics.js   📦 투자 지표 계산
-├── news-api.js             📦 뉴스 API 연동
+├── watchlist.js            ✅ 워치리스트 관리 (450+ 라인)
+├── investment-metrics.js   ✅ 투자 지표 계산 (400+ 라인)
+├── news-api.js             ✅ 뉴스 API 연동 (400+ 라인)
+├── proxy-server.js         ✅ 네이버 API 프록시 서버 (Node.js)
+├── package.json            ✅ 프록시 서버 의존성
 ├── ai-analysis.js          📦 AI 분석 로직
 ├── widgets/                📦 위젯 컴포넌트
 │   ├── watchlist-widget.js
 │   ├── news-widget.js
 │   └── chart-widget.js
-└── basic.md                ✅ 프로젝트 문서
-└── ROADMAP.md              ✅ 로드맵 (이 파일)
+├── basic.md                ✅ 프로젝트 문서
+├── ROADMAP.md              ✅ 로드맵 (이 파일)
+├── PROGRESS.md             ✅ 진행 상황 로그
+├── NAVER_API_GUIDE.md      ✅ 네이버 API 가이드
+└── SERVER_GUIDE.md         ✅ 프록시 서버 실행 가이드
 ```
 
 ---
@@ -320,20 +313,56 @@ Finance/
 | 차트 | Chart.js | ✅ |
 | API | 금융위원회 API | ✅ |
 | 스토리지 | localStorage | ✅ |
-| PDF | jsPDF | 📦 |
-| 엑셀 | SheetJS | 📦 |
-| 뉴스 | Naver API, DART API | 📦 |
+| 뉴스 | Naver API, DART API | ✅ |
+| 프록시 | Node.js/Express | ✅ |
 | 드래그 | Sortable.js / Gridstack.js | 📦 |
 
 ---
 
 ## 💡 다음 단계
 
-1. **워치리스트 시스템 구현** (가장 기초적이고 중요)
-2. **대시보드 레이아웃** (워치리스트를 표시할 공간)
-3. **투자 지표 추가** (분석 강화)
-4. **리포트 생성** (사용자 가치 제공)
-5. **뉴스 연동** (실시간성 강화)
-6. **AI 분석** (차별화 요소)
+### ✅ 완료된 작업 (2025-11-26 기준)
+1. ✅ **워치리스트 시스템 구현** - localStorage 기반 CRUD, 알림, 태그, 메모
+2. ✅ **투자 지표 추가** - PER, PBR, PSR, EV/EBITDA, 배당수익률 (8개 지표)
+3. ✅ **뉴스 연동** - Naver News API 실제 연동 완료 (프록시 서버 구축)
+4. ✅ **색상 체계 커스터마이징** - 저평가(빨강) → 고평가(초록) 반전
+5. ✅ **프록시 서버 구축** - Node.js/Express, 네이버 API 키 통합
+
+### 📍 다음 우선 작업: Phase 1 - 맞춤형 대시보드
+**목표:** 워치리스트와 주요 지표를 한눈에 볼 수 있는 대시보드 페이지 생성
+
+**구현 계획:**
+1. **dashboard.html 생성**
+   - 헤더 네비게이션 (index.html ↔️ dashboard.html)
+   - 그리드 레이아웃 (12컬럼 시스템)
+   - 위젯 컨테이너 영역
+
+2. **dashboard.css 생성**
+   - 그리드 시스템 스타일
+   - 위젯 카드 디자인
+   - 반응형 브레이크포인트
+
+3. **dashboard.js 생성**
+   - 위젯 시스템 초기화
+   - localStorage에서 레이아웃 로드/저장
+   - 위젯 추가/삭제/이동 로직
+
+4. **초기 위젯 구현**
+   - 📊 워치리스트 위젯 (watchlist.js 재사용)
+   - 🔍 빠른 검색 위젯
+   - 📈 재무 요약 위젯
+   - 📰 뉴스 피드 위젯 (news-api.js 재사용)
+
+**예상 소요 시간:** 2-3일
+
+### 🔄 향후 작업 순서
+5. **재무 건전성 점수** (Phase 6) - 100점 만점 스코어링
+6. **AI 추천 알고리즘** (Phase 6) - 매수/매도/보유 추천
+7. **이상 패턴 감지** (Phase 6) - 급격한 재무 변화 감지
+
+### 🎯 기술적 고려사항
+- **드래그 앤 드롭:** Sortable.js 또는 Gridstack.js 도입 검토
+- **실시간 주가:** WebSocket 또는 polling 방식 검토
+- **성능 최적화:** Virtual scrolling, lazy loading
 
 각 단계는 독립적으로 개발 가능하며, 점진적으로 기능을 추가할 수 있습니다.
