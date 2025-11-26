@@ -1,39 +1,56 @@
 # 🚀 고급 기능 개발 로드맵
 
-## Phase 1: 맞춤형 대시보드 (1-2주) 📍 **다음 작업**
+## Phase 1: 실시간 주가 정보 연동 (1-2주) 📍 **다음 작업**
 
-### 1.1 위젯 시스템 설계
+### 1.1 실시간 주가 데이터 소스
 ```javascript
-// 위젯 타입 정의
-const WIDGET_TYPES = {
-  WATCHLIST: 'watchlist',           // 관심 기업 목록
-  QUICK_SEARCH: 'quick-search',     // 빠른 검색
-  FINANCIAL_SUMMARY: 'fin-summary', // 재무 요약
-  RATIO_CHART: 'ratio-chart',       // 비율 차트
-  NEWS_FEED: 'news-feed',           // 뉴스 피드
-  ALERTS: 'alerts'                  // 알림
+// API 옵션
+const STOCK_API_OPTIONS = {
+  // 옵션 1: 한국투자증권 OpenAPI
+  KIS: 'https://openapi.koreainvestment.com',
+  
+  // 옵션 2: 네이버 금융 (크롤링)
+  NAVER_FINANCE: 'https://finance.naver.com',
+  
+  // 옵션 3: Yahoo Finance API
+  YAHOO: 'https://query1.finance.yahoo.com/v8/finance/chart/'
 };
 
-// 위젯 데이터 구조
-const widget = {
-  id: 'widget-1',
-  type: 'watchlist',
-  position: { x: 0, y: 0, w: 2, h: 3 },
-  settings: { /* 위젯별 설정 */ }
+// 실시간 데이터 구조
+const realtimeStock = {
+  code: '005930',
+  name: '삼성전자',
+  price: 75000,
+  change: +1500,
+  changeRate: 2.04,
+  volume: 15234567,
+  timestamp: '2024-01-15 15:30:00'
 };
 ```
 
-### 1.2 레이아웃 관리
-- Grid 기반 레이아웃 (12 컬럼)
-- 드래그 앤 드롭 (Sortable.js 또는 직접 구현)
-- 위젯 크기 조절
-- localStorage에 레이아웃 저장
+### 1.2 데이터 업데이트 방식
+**Polling 방식 (단순)**
+```javascript
+// 30초마다 주가 업데이트
+setInterval(() => {
+  updateStockPrices();
+}, 30000);
+```
+
+**WebSocket 방식 (실시간)**
+```javascript
+// WebSocket 연결
+const ws = new WebSocket('wss://api.stock.com/realtime');
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  updateStockUI(data);
+};
+```
 
 ### 1.3 구현 파일
-- `dashboard.html` - 대시보드 페이지
-- `dashboard.js` - 대시보드 로직
-- `widget-*.js` - 각 위젯 컴포넌트
-- `dashboard.css` - 대시보드 스타일
+- `realtime-stock.js` - 실시간 주가 API 통합
+- `stock-updater.js` - 자동 업데이트 로직
+- `stock-widget.css` - 주가 위젯 스타일
 
 ---
 
@@ -248,9 +265,9 @@ function getInvestmentRating(healthScore, valuation) {
 - 📦 ApexCharts (고급 인터랙티브 차트)
 - 📦 D3.js (커스텀 시각화)
 
-### 드래그 앤 드롭
-- 📦 Sortable.js (드래그 앤 드롭)
-- 📦 Gridstack.js (대시보드 그리드)
+### 실시간 데이터
+- 📦 Socket.io (WebSocket 클라이언트)
+- 📦 axios (HTTP 요청)
 
 ### 유틸리티
 - 📦 date-fns (날짜 처리)
@@ -266,13 +283,14 @@ function getInvestmentRating(healthScore, valuation) {
 3. ✅ 뉴스 API 연동 (Phase 5 완료)
 
 ### 🟡 Medium Priority (3-4주 내) 🔄 **다음 작업**
-4. 📍 **대시보드 페이지 생성** (Phase 1)
-5. ⏳ 재무 건전성 점수 (Phase 6)
+4. 📍 **실시간 주가 정보 연동** (Phase 1)
+5. 📍 **성능 최적화** (Virtual scrolling, Lazy loading)
+6. ⏳ 재무 건전성 점수 (Phase 6)
 
 ### 🟢 Low Priority (5주+)
-6. ⏳ AI 추천 알고리즘 (Phase 6)
-7. ⏳ 이상 패턴 감지 (Phase 6)
-8. ⏳ 고급 차트 (D3.js)
+7. ⏳ AI 추천 알고리즘 (Phase 6)
+8. ⏳ 이상 패턴 감지 (Phase 6)
+9. ⏳ 고급 차트 (D3.js)
 
 ---
 
@@ -281,21 +299,19 @@ function getInvestmentRating(healthScore, valuation) {
 ```
 Finance/
 ├── index.html              ✅ 기본 검색 페이지 (1200+ 라인)
-├── dashboard.html          📦 대시보드 페이지 (다음 작업)
 ├── style.css               ✅ 기본 스타일 (1800+ 라인)
-├── dashboard.css           📦 대시보드 스타일
-├── app.js                  ✅ 기본 앱 로직 (1200+ 라인)
-├── dashboard.js            📦 대시보드 로직
+├── app.js                  ✅ 기본 앱 로직 (1600+ 라인)
 ├── watchlist.js            ✅ 워치리스트 관리 (450+ 라인)
 ├── investment-metrics.js   ✅ 투자 지표 계산 (400+ 라인)
+├── financial-health.js     ✅ 재무 건전성 점수 (450+ 라인)
+├── stock-api.js            ✅ 주식 API 통합 (200+ 라인)
 ├── news-api.js             ✅ 뉴스 API 연동 (400+ 라인)
 ├── proxy-server.js         ✅ 네이버 API 프록시 서버 (Node.js)
 ├── package.json            ✅ 프록시 서버 의존성
+├── realtime-stock.js       📦 실시간 주가 (다음 작업)
+├── stock-updater.js        📦 주가 자동 업데이트
+├── performance-optimizer.js 📦 성능 최적화
 ├── ai-analysis.js          📦 AI 분석 로직
-├── widgets/                📦 위젯 컴포넌트
-│   ├── watchlist-widget.js
-│   ├── news-widget.js
-│   └── chart-widget.js
 ├── basic.md                ✅ 프로젝트 문서
 ├── ROADMAP.md              ✅ 로드맵 (이 파일)
 ├── PROGRESS.md             ✅ 진행 상황 로그
@@ -315,7 +331,8 @@ Finance/
 | 스토리지 | localStorage | ✅ |
 | 뉴스 | Naver API, DART API | ✅ |
 | 프록시 | Node.js/Express | ✅ |
-| 드래그 | Sortable.js / Gridstack.js | 📦 |
+| 실시간 | WebSocket / Polling | 📦 |
+| 최적화 | Virtual Scroll, Lazy Load | 📦 |
 
 ---
 
@@ -325,44 +342,166 @@ Finance/
 1. ✅ **워치리스트 시스템 구현** - localStorage 기반 CRUD, 알림, 태그, 메모
 2. ✅ **투자 지표 추가** - PER, PBR, PSR, EV/EBITDA, 배당수익률 (8개 지표)
 3. ✅ **뉴스 연동** - Naver News API 실제 연동 완료 (프록시 서버 구축)
-4. ✅ **색상 체계 커스터마이징** - 저평가(빨강) → 고평가(초록) 반전
-5. ✅ **프록시 서버 구축** - Node.js/Express, 네이버 API 키 통합
+4. ✅ **재무 건전성 점수** - 100점 만점 스코어링 시스템 (4개 카테고리)
+5. ✅ **주식 API 통합** - 주가, 시가총액, 상장주식수 자동 입력
+6. ✅ **색상 체계 커스터마이징** - 저평가(빨강) → 고평가(초록) 반전
+7. ✅ **프록시 서버 구축** - Node.js/Express, 네이버 API 키 통합
+8. ✅ **기업명 검증** - 상장 기업 목록 검증 및 오류 처리
 
-### 📍 다음 우선 작업: Phase 1 - 맞춤형 대시보드
-**목표:** 워치리스트와 주요 지표를 한눈에 볼 수 있는 대시보드 페이지 생성
+---
 
-**구현 계획:**
-1. **dashboard.html 생성**
-   - 헤더 네비게이션 (index.html ↔️ dashboard.html)
-   - 그리드 레이아웃 (12컬럼 시스템)
-   - 위젯 컨테이너 영역
+## 📍 다음 우선 작업: Phase 1 - 실시간 주가 정보 연동
 
-2. **dashboard.css 생성**
-   - 그리드 시스템 스타일
-   - 위젯 카드 디자인
-   - 반응형 브레이크포인트
+### 목표
+워치리스트와 재무 페이지에 실시간 주가 정보를 자동 업데이트
 
-3. **dashboard.js 생성**
-   - 위젯 시스템 초기화
-   - localStorage에서 레이아웃 로드/저장
-   - 위젯 추가/삭제/이동 로직
+### 구현 계획
 
-4. **초기 위젯 구현**
-   - 📊 워치리스트 위젯 (watchlist.js 재사용)
-   - 🔍 빠른 검색 위젯
-   - 📈 재무 요약 위젯
-   - 📰 뉴스 피드 위젯 (news-api.js 재사용)
+#### 1단계: API 조사 및 선택 (1일)
+**검토할 API:**
+- 한국투자증권 OpenAPI (실시간 가능, 인증 필요)
+- 네이버 금융 크롤링 (준실시간, 간단)
+- Yahoo Finance API (글로벌 주식)
+- Alpha Vantage API (무료 티어 제한)
 
-**예상 소요 시간:** 2-3일
+**선정 기준:**
+- 무료 사용 가능 여부
+- API 호출 제한
+- 실시간성 (지연 시간)
+- 데이터 신뢰성
 
-### 🔄 향후 작업 순서
-5. **재무 건전성 점수** (Phase 6) - 100점 만점 스코어링
-6. **AI 추천 알고리즘** (Phase 6) - 매수/매도/보유 추천
-7. **이상 패턴 감지** (Phase 6) - 급격한 재무 변화 감지
+#### 2단계: realtime-stock.js 구현 (2-3일)
+```javascript
+// 주요 기능
+class RealtimeStock {
+  constructor() {
+    this.updateInterval = 30000; // 30초
+    this.watchedStocks = [];
+  }
+  
+  // 주가 조회
+  async fetchStockPrice(code) { }
+  
+  // 자동 업데이트 시작
+  startAutoUpdate() { }
+  
+  // 워치리스트 동기화
+  syncWithWatchlist() { }
+}
+```
 
-### 🎯 기술적 고려사항
-- **드래그 앤 드롭:** Sortable.js 또는 Gridstack.js 도입 검토
-- **실시간 주가:** WebSocket 또는 polling 방식 검토
-- **성능 최적화:** Virtual scrolling, lazy loading
+#### 3단계: UI 업데이트 (1-2일)
+- 워치리스트 카드에 실시간 주가 표시
+- 등락률 색상 변화 (빨강/파랑)
+- 로딩 인디케이터
+- 마지막 업데이트 시간 표시
 
-각 단계는 독립적으로 개발 가능하며, 점진적으로 기능을 추가할 수 있습니다.
+#### 4단계: 테스트 및 최적화 (1일)
+- API 호출 최적화 (배치 처리)
+- 에러 핸들링
+- 로컬스토리지 캐싱
+
+**예상 소요 시간:** 5-7일
+
+---
+
+## 📍 다음 작업 2: 성능 최적화
+
+### 목표
+대량의 재무 데이터와 뉴스를 효율적으로 렌더링
+
+### 구현 계획
+
+#### 1. Virtual Scrolling (가상 스크롤)
+```javascript
+// 뉴스 피드에 적용
+class VirtualScroller {
+  constructor(container, itemHeight) {
+    this.visibleItems = 10;
+    this.bufferSize = 5;
+  }
+  
+  // 보이는 영역만 렌더링
+  render(startIndex, endIndex) { }
+}
+```
+
+**적용 대상:**
+- 뉴스 피드 (수백 개 뉴스)
+- 공시 리스트
+- 워치리스트 (많은 기업)
+
+#### 2. Lazy Loading (지연 로딩)
+```javascript
+// 이미지, 차트 지연 로딩
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      loadChart(entry.target);
+    }
+  });
+});
+```
+
+**적용 대상:**
+- Chart.js 차트
+- 뉴스 썸네일 이미지
+- 재무 데이터 테이블
+
+#### 3. 데이터 캐싱
+```javascript
+// localStorage + 메모리 캐시
+class DataCache {
+  constructor(ttl = 300000) { // 5분
+    this.cache = new Map();
+    this.ttl = ttl;
+  }
+  
+  set(key, value) { }
+  get(key) { }
+  isExpired(key) { }
+}
+```
+
+**예상 소요 시간:** 3-4일
+
+---
+
+## 🔄 향후 작업 순서
+
+### 단기 (1-2주)
+1. 📍 **실시간 주가 연동** - 워치리스트 자동 업데이트
+2. 📍 **성능 최적화** - Virtual scroll, Lazy load, 캐싱
+
+### 중기 (3-4주)
+3. ⏳ **AI 추천 알고리즘** (Phase 6) - 매수/매도/보유 추천
+4. ⏳ **이상 패턴 감지** (Phase 6) - 급격한 재무 변화 감지
+
+### 장기 (5주+)
+5. ⏳ **고급 차트** (D3.js) - 인터랙티브 시각화
+6. ⏳ **포트폴리오 관리** - 보유 종목 추적
+7. ⏳ **백테스팅** - 전략 시뮬레이션
+
+---
+
+## 🎯 기술 스택 선택
+
+### 실시간 주가
+- **Polling 방식** (단순, 안정적)
+  - 30초마다 API 호출
+  - 에러 핸들링 용이
+  - 무료 API에 적합
+
+- **WebSocket 방식** (고급, 실시간)
+  - 밀리초 단위 업데이트
+  - 서버 부하 낮음
+  - 유료 API 필요
+
+→ **1단계: Polling 방식으로 시작**
+
+### 성능 최적화
+- **Virtual Scrolling:** 직접 구현 (라이브러리 없이)
+- **Lazy Loading:** Intersection Observer API
+- **캐싱:** localStorage + Map
+
+→ **Vanilla JS로 구현 (의존성 최소화)**
