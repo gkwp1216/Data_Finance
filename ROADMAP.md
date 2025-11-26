@@ -377,10 +377,10 @@ class RealtimeStock {
   constructor() {
     this.updateInterval = 30000; // 30초
     this.watchedStocks = [];
-  }
-  
-  // 주가 조회
-  async fetchStockPrice(code) { }
+    }
+    
+    // 주가 조회
+    async fetchStockPrice(code) { }
   
   // 자동 업데이트 시작
   startAutoUpdate() { }
