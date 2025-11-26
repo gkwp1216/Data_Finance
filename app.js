@@ -1038,63 +1038,97 @@ function displayInvestmentMetrics(metrics) {
 
     // PER
     const perEval = InvestmentMetrics.evaluateMetric('per', metrics.per);
-    document.getElementById('perValue').textContent = 
-        InvestmentMetrics.formatNumber(metrics.per);
-    document.getElementById('perBadge').textContent = perEval.rating;
-    document.getElementById('perBadge').style.backgroundColor = perEval.color;
-    document.getElementById('perBadge').style.color = 'white';
+    const perValueEl = document.getElementById('perValue');
+    const perBadgeEl = document.getElementById('perBadge');
     const perEvalEl = document.getElementById('perEval');
-    perEvalEl.textContent = perEval.message;
-    perEvalEl.className = 'metric-eval ' + getRatingClass(perEval.rating);
+    
+    if (perValueEl) perValueEl.textContent = InvestmentMetrics.formatNumber(metrics.per);
+    if (perBadgeEl) {
+        perBadgeEl.textContent = perEval.rating;
+        perBadgeEl.style.backgroundColor = perEval.color;
+        perBadgeEl.style.color = 'white';
+    }
+    if (perEvalEl) {
+        perEvalEl.textContent = perEval.message;
+        perEvalEl.className = 'metric-eval ' + getRatingClass(perEval.rating);
+    }
 
     // PBR
     const pbrEval = InvestmentMetrics.evaluateMetric('pbr', metrics.pbr);
-    document.getElementById('pbrValue').textContent = 
-        InvestmentMetrics.formatNumber(metrics.pbr);
-    document.getElementById('pbrBadge').textContent = pbrEval.rating;
-    document.getElementById('pbrBadge').style.backgroundColor = pbrEval.color;
-    document.getElementById('pbrBadge').style.color = 'white';
+    const pbrValueEl = document.getElementById('pbrValue');
+    const pbrBadgeEl = document.getElementById('pbrBadge');
     const pbrEvalEl = document.getElementById('pbrEval');
-    pbrEvalEl.textContent = pbrEval.message;
-    pbrEvalEl.className = 'metric-eval ' + getRatingClass(pbrEval.rating);
+    
+    if (pbrValueEl) pbrValueEl.textContent = InvestmentMetrics.formatNumber(metrics.pbr);
+    if (pbrBadgeEl) {
+        pbrBadgeEl.textContent = pbrEval.rating;
+        pbrBadgeEl.style.backgroundColor = pbrEval.color;
+        pbrBadgeEl.style.color = 'white';
+    }
+    if (pbrEvalEl) {
+        pbrEvalEl.textContent = pbrEval.message;
+        pbrEvalEl.className = 'metric-eval ' + getRatingClass(pbrEval.rating);
+    }
 
     // PSR
     const psrEval = InvestmentMetrics.evaluateMetric('psr', metrics.psr);
-    document.getElementById('psrValue').textContent = 
-        InvestmentMetrics.formatNumber(metrics.psr);
-    document.getElementById('psrBadge').textContent = psrEval.rating;
-    document.getElementById('psrBadge').style.backgroundColor = psrEval.color;
-    document.getElementById('psrBadge').style.color = 'white';
+    const psrValueEl = document.getElementById('psrValue');
+    const psrBadgeEl = document.getElementById('psrBadge');
     const psrEvalEl = document.getElementById('psrEval');
-    psrEvalEl.textContent = psrEval.message;
-    psrEvalEl.className = 'metric-eval ' + getRatingClass(psrEval.rating);
+    
+    if (psrValueEl) psrValueEl.textContent = InvestmentMetrics.formatNumber(metrics.psr);
+    if (psrBadgeEl) {
+        psrBadgeEl.textContent = psrEval.rating;
+        psrBadgeEl.style.backgroundColor = psrEval.color;
+        psrBadgeEl.style.color = 'white';
+    }
+    if (psrEvalEl) {
+        psrEvalEl.textContent = psrEval.message;
+        psrEvalEl.className = 'metric-eval ' + getRatingClass(psrEval.rating);
+    }
 
     // EV/EBITDA
     const evEval = InvestmentMetrics.evaluateMetric('evToEbitda', metrics.evToEbitda);
-    document.getElementById('evEbitdaValue').textContent = 
-        InvestmentMetrics.formatNumber(metrics.evToEbitda);
-    document.getElementById('evEbitdaBadge').textContent = evEval.rating;
-    document.getElementById('evEbitdaBadge').style.backgroundColor = evEval.color;
-    document.getElementById('evEbitdaBadge').style.color = 'white';
+    const evValueEl = document.getElementById('evEbitdaValue');
+    const evBadgeEl = document.getElementById('evEbitdaBadge');
     const evEvalEl = document.getElementById('evEbitdaEval');
-    evEvalEl.textContent = evEval.message;
-    evEvalEl.className = 'metric-eval ' + getRatingClass(evEval.rating);
+    
+    if (evValueEl) evValueEl.textContent = InvestmentMetrics.formatNumber(metrics.evToEbitda);
+    if (evBadgeEl) {
+        evBadgeEl.textContent = evEval.rating;
+        evBadgeEl.style.backgroundColor = evEval.color;
+        evBadgeEl.style.color = 'white';
+    }
+    if (evEvalEl) {
+        evEvalEl.textContent = evEval.message;
+        evEvalEl.className = 'metric-eval ' + getRatingClass(evEval.rating);
+    }
 
     // 배당수익률
     if (metrics.dividendYield) {
         const divEval = InvestmentMetrics.evaluateMetric('dividendYield', metrics.dividendYield);
-        document.getElementById('dividendYieldValue').textContent = 
-            InvestmentMetrics.formatNumber(metrics.dividendYield) + '%';
-        document.getElementById('dividendYieldBadge').textContent = divEval.rating;
-        document.getElementById('dividendYieldBadge').style.backgroundColor = divEval.color;
-        document.getElementById('dividendYieldBadge').style.color = 'white';
+        const divValueEl = document.getElementById('dividendYieldValue');
+        const divBadgeEl = document.getElementById('dividendYieldBadge');
         const divEvalEl = document.getElementById('dividendYieldEval');
-        divEvalEl.textContent = divEval.message;
-        divEvalEl.className = 'metric-eval ' + getRatingClass(divEval.rating);
+        
+        if (divValueEl) divValueEl.textContent = InvestmentMetrics.formatNumber(metrics.dividendYield) + '%';
+        if (divBadgeEl) {
+            divBadgeEl.textContent = divEval.rating;
+            divBadgeEl.style.backgroundColor = divEval.color;
+            divBadgeEl.style.color = 'white';
+        }
+        if (divEvalEl) {
+            divEvalEl.textContent = divEval.message;
+            divEvalEl.className = 'metric-eval ' + getRatingClass(divEval.rating);
+        }
     } else {
-        document.getElementById('dividendYieldValue').textContent = '-';
-        document.getElementById('dividendYieldBadge').textContent = 'N/A';
-        document.getElementById('dividendYieldEval').textContent = '배당 정보 없음';
+        const divValueEl = document.getElementById('dividendYieldValue');
+        const divBadgeEl = document.getElementById('dividendYieldBadge');
+        const divEvalEl = document.getElementById('dividendYieldEval');
+        
+        if (divValueEl) divValueEl.textContent = '-';
+        if (divBadgeEl) divBadgeEl.textContent = 'N/A';
+        if (divEvalEl) divEvalEl.textContent = '배당 정보 없음';
     }
 
     // EPS
@@ -1187,8 +1221,8 @@ function displayHealthScore(healthScore) {
     }, duration / steps);
     
     // 등급 표시
-    gradeValue.textContent = healthScore.grade;
-    gradeValue.style.background = `linear-gradient(135deg, ${FinancialHealth.getGradeColor(healthScore.grade)}, ${FinancialHealth.getGradeColor(healthScore.grade)}dd)`;
+    gradeBadge.textContent = healthScore.grade;
+    gradeBadge.style.background = `linear-gradient(135deg, ${FinancialHealth.getGradeColor(healthScore.grade)}, ${FinancialHealth.getGradeColor(healthScore.grade)}dd)`;
     
     // 게이지 애니메이션 (251.2는 반원의 둘레)
     const progress = (healthScore.totalScore / 100) * 251.2;

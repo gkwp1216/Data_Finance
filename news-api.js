@@ -103,7 +103,7 @@ const NewsAPI = {
      */
     async searchDartDisclosure(corpCode, beginDate, endDate) {
         if (!this.DART_API_KEY) {
-            console.warn('DART API 키가 설정되지 않았습니다.');
+            // DART API 키가 없으면 샘플 데이터 사용
             return this.generateSampleDisclosure();
         }
         
