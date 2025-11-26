@@ -249,12 +249,19 @@ const FinancialHealth = {
             details.push({ metric: 'PBR', value: pbr, score: 0, rating: '자본잠식/미산정' });
         }
 
+        // 밸류에이션(Per/Pbr) 데이터 가용성 판단
+        const perVal = per && per > 0;
+        const pbrVal = pbr && pbr > 0;
+        const valuationDataAvailable = perVal || pbrVal;
+
         return {
             score: score,
             maxScore: 20,
             percentage: Math.round((score / 20) * 100),
             details: details,
-            summary: this.getValuationSummary(score)
+            // 데이터가 없을 경우 명확한 메시지 반환
+            summary: valuationDataAvailable ? this.getValuationSummary(score) : '데이터 없음',
+            dataAvailable: valuationDataAvailable
         };
     },
 

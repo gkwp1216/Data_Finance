@@ -1,4 +1,5 @@
 // 전역 변수
+const API_URL = 'https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json';
 let apiKey = 'a840a5ad65e360f78621fc44725022e66f951d3659cea20e297a7a1b21e2929a';
 let chartInstance = null;
 let currentFinancialData = null; // 현재 표시된 재무 데이터 저장
@@ -100,14 +101,115 @@ function showLoading(show) {
 
 // 에러 표시
 function showError(message) {
-    elements.errorText.textContent = message;
-    elements.errorMessage.classList.remove('hidden');
-    setTimeout(() => {
-        elements.errorMessage.classList.add('hidden');
-    }, 5000);
+    // 기존 오류 요소가 있으면 사용
+    if (elements.errorText && elements.errorMessage) {
+        elements.errorText.textContent = message;
+        elements.errorMessage.classList.remove('hidden');
+        setTimeout(() => {
+            elements.errorMessage.classList.add('hidden');
+        }, 5000);
+    }
+    
+    // 배경 오버레이 추가
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+    `;
+    
+    // 모달 팝업으로도 표시 (더 명확한 알림)
+    const errorModal = document.createElement('div');
+    errorModal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        z-index: 10000;
+        text-align: center;
+        min-width: 300px;
+    `;
+    errorModal.innerHTML = `
+        <p style="color: #e74c3c; font-size: 18px; margin-bottom: 1rem; font-weight: bold;">⚠️ 오류</p>
+        <p style="color: #333; font-size: 14px; margin-bottom: 1.5rem; line-height: 1.5; white-space: pre-line;">${message}</p>
+        <button id="errorModalBtn" style="
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.7rem 2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        ">확인</button>
+    `;
+    
+    // 오버레이와 모달을 함께 제거하는 함수
+    const closeModal = () => {
+        overlay.remove();
+        errorModal.remove();
+    };
+    
+    // 오버레이 클릭 시 닫기
+    overlay.onclick = closeModal;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(errorModal);
+    
+    // 확인 버튼에 이벤트 리스너 추가
+    document.getElementById('errorModalBtn').addEventListener('click', closeModal);
 }
 
+// 한국 주요 상장기업 목록 (코스피, 코스닥)
+const LISTED_COMPANIES = [
+    '삼성전자', 'SK하이닉스', 'LG에너지솔루션', '삼성바이오로직스', '현대차',
+    '기아', 'POSCO홀딩스', '삼성물산', 'NAVER', '카카오',
+    'LG화학', '현대모비스', '삼성SDI', '기업은행', 'KB금융',
+    '신한지주', '하나금융지주', 'LG전자', '포스코퓨처엠', '셀트리온',
+    'SK이노베이션', 'SK텔레콤', 'KT&G', '삼성생명', '한국전력',
+    'LG', '두산에너빌리티', '고려아연', 'HMM', '대한항공',
+    'SK', 'HD현대중공업', '삼성화재', 'HD한국조선해양', '메리츠금융지주',
+    '크래프톤', '엔씨소프트', '넷마블', '펄어비스', '컴투스',
+    '삼성전기', 'LG디스플레이', '에코프로비엠', '에코프로', 'SK스퀘어',
+    'CJ제일제당', '한화에어로스페이스', '한온시스템', 'HD현대일렉트릭', '롯데케미칼',
+    '하이브', 'JYP Ent.', 'SM', 'YG', '빅히트',
+    '카카오뱅크', '카카오페이', '토스', '쿠팡', '배달의민족',
+];
+
 // 재무정보 검색
+// 기업명 유효성 검증
+function isValidCompanyName(name) {
+    if (!name || name.length < 2) return false;
+    
+    // 한글, 영문, 숫자만 허용 (특수문자 제외)
+    const validPattern = /^[가-힣a-zA-Z0-9\s]+$/;
+    if (!validPattern.test(name)) return false;
+    
+    // 숫자로만 이루어진 경우 제외
+    if (/^[0-9]+$/.test(name)) return false;
+    
+    return true;
+}
+
+// 상장 기업 여부 확인
+function isListedCompany(name) {
+    const normalizedName = name.trim();
+    // 정확한 매칭 또는 부분 매칭
+    return LISTED_COMPANIES.some(company => 
+        company === normalizedName || 
+        company.includes(normalizedName) ||
+        normalizedName.includes(company)
+    );
+}
+
 async function searchFinancialData() {
     // 입력값 검증
     if (!apiKey) {
@@ -118,6 +220,17 @@ async function searchFinancialData() {
     const corpName = elements.corpName.value.trim();
     if (!corpName) {
         showError('기업명을 입력해주세요.');
+        return;
+    }
+    
+    if (!isValidCompanyName(corpName)) {
+        showError('올바른 기업명을 입력해주세요. (한글, 영문, 숫자만 가능)');
+        return;
+    }
+    
+    // 상장 기업 여부 확인
+    if (!isListedCompany(corpName)) {
+        showError('상장되지 않은 기업명입니다.\n코스피 또는 코스닥에 상장된 기업명을 입력해주세요.');
         return;
     }
 
@@ -187,23 +300,50 @@ async function fetchFinancialData(corpName, bsnsYear, reprtCode) {
 
 // 샘플 데이터 생성 (데모용)
 function generateSampleData(corpName, year) {
-    const baseAmount = Math.floor(Math.random() * 100000000000) + 50000000000;
+    // 기업명 기반 시드값 생성 (같은 기업은 같은 데이터)
+    let seed = 0;
+    for (let i = 0; i < corpName.length; i++) {
+        seed += corpName.charCodeAt(i);
+    }
+    
+    // 시드 기반 랜덤 함수
+    const seededRandom = (min, max) => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return min + (seed / 233280) * (max - min);
+    };
+    
+    // 기업별 특성 설정
+    const baseAmount = Math.floor(seededRandom(80000000000, 400000000000));
+    const debtRatio = seededRandom(0.3, 0.7);  // 부채비율 30-70%
+    const currentRatioMultiplier = seededRandom(1.2, 2.8);  // 유동비율 120-280%
+    const profitMargin = seededRandom(0.05, 0.2);  // 영업이익률 5-20%
+    const netMargin = seededRandom(0.03, 0.15);  // 순이익률 3-15%
+    
+    const totalAssets = baseAmount;
+    const totalLiabilities = Math.floor(totalAssets * debtRatio);
+    const totalEquity = totalAssets - totalLiabilities;
+    const currentAssets = Math.floor(totalAssets * seededRandom(0.45, 0.65));
+    const currentLiabilities = Math.floor(currentAssets / currentRatioMultiplier);
+    const nonCurrentLiabilities = totalLiabilities - currentLiabilities;
+    const revenue = Math.floor(totalAssets * seededRandom(0.7, 1.2));
+    const operatingIncome = Math.floor(revenue * profitMargin);
+    const netIncome = Math.floor(revenue * netMargin);
     
     return {
         success: true,
         corpName: corpName,
         year: year,
         items: [
-            { account_nm: '자산총계', thstrm_amount: baseAmount },
-            { account_nm: '유동자산', thstrm_amount: Math.floor(baseAmount * 0.6) },
-            { account_nm: '비유동자산', thstrm_amount: Math.floor(baseAmount * 0.4) },
-            { account_nm: '부채총계', thstrm_amount: Math.floor(baseAmount * 0.45) },
-            { account_nm: '유동부채', thstrm_amount: Math.floor(baseAmount * 0.25) },
-            { account_nm: '비유동부채', thstrm_amount: Math.floor(baseAmount * 0.2) },
-            { account_nm: '자본총계', thstrm_amount: Math.floor(baseAmount * 0.55) },
-            { account_nm: '매출액', thstrm_amount: Math.floor(baseAmount * 0.8) },
-            { account_nm: '영업이익', thstrm_amount: Math.floor(baseAmount * 0.12) },
-            { account_nm: '당기순이익', thstrm_amount: Math.floor(baseAmount * 0.08) }
+            { account_nm: '자산총계', thstrm_amount: totalAssets },
+            { account_nm: '유동자산', thstrm_amount: currentAssets },
+            { account_nm: '비유동자산', thstrm_amount: totalAssets - currentAssets },
+            { account_nm: '부채총계', thstrm_amount: totalLiabilities },
+            { account_nm: '유동부채', thstrm_amount: currentLiabilities },
+            { account_nm: '비유동부채', thstrm_amount: nonCurrentLiabilities },
+            { account_nm: '자본총계', thstrm_amount: totalEquity },
+            { account_nm: '매출액', thstrm_amount: revenue },
+            { account_nm: '영업이익', thstrm_amount: operatingIncome },
+            { account_nm: '당기순이익', thstrm_amount: netIncome }
         ]
     };
 }
@@ -226,9 +366,27 @@ function displayFinancialData(data) {
     data.items.forEach(item => {
         financialData[item.account_nm] = parseInt(item.thstrm_amount) || 0;
     });
+    
+    // 디버그: 재무 데이터 확인
+    console.log('=== 재무 데이터 파싱 결과 ===');
+    console.log('자산총계:', financialData['자산총계']?.toLocaleString());
+    console.log('부채총계:', financialData['부채총계']?.toLocaleString());
+    console.log('자본총계:', financialData['자본총계']?.toLocaleString());
+    console.log('유동자산:', financialData['유동자산']?.toLocaleString());
+    console.log('유동부채:', financialData['유동부채']?.toLocaleString());
+    console.log('당기순이익:', financialData['당기순이익']?.toLocaleString());
+    console.log('매출액:', financialData['매출액']?.toLocaleString());
+    console.log('영업이익:', financialData['영업이익']?.toLocaleString());
 
     // 재무비율 계산 및 표시
     const ratios = calculateAndDisplayRatios(financialData);
+    
+    // 디버그: 계산된 비율 확인
+    console.log('=== 계산된 재무 비율 ===');
+    console.log('부채비율:', ratios.debtRatio.toFixed(2) + '%');
+    console.log('자기자본비율:', ratios.equityRatio.toFixed(2) + '%');
+    console.log('유동비율:', ratios.currentRatio.toFixed(2) + '%');
+    console.log('ROE:', ratios.roe.toFixed(2) + '%');
 
     // 테이블 생성
     createFinancialTable(data.items);
@@ -326,6 +484,11 @@ function calculateAndDisplayRatios(data) {
     const currentLiabilities = data['유동부채'] || 0;
     const netIncome = data['당기순이익'] || 0;
 
+    console.log('=== 비율 계산용 원본 데이터 ===');
+    console.log('부채총계:', liabilities, '/ 자본총계:', equity);
+    console.log('유동자산:', currentAssets, '/ 유동부채:', currentLiabilities);
+    console.log('당기순이익:', netIncome, '/ 자본총계:', equity);
+
     // 부채비율
     const debtRatioNum = equity > 0 ? (liabilities / equity) * 100 : 0;
     const debtRatio = debtRatioNum > 0 ? debtRatioNum.toFixed(2) : '-';
@@ -345,6 +508,12 @@ function calculateAndDisplayRatios(data) {
     const roeNum = equity > 0 ? (netIncome / equity) * 100 : 0;
     const roe = roeNum > 0 ? roeNum.toFixed(2) : '-';
     elements.roe.textContent = roe !== '-' ? `${roe}%` : '-';
+    
+    console.log('=== 계산된 정확한 비율 ===');
+    console.log('부채비율:', debtRatioNum);
+    console.log('자기자본비율:', equityRatioNum);
+    console.log('유동비율:', currentRatioNum);
+    console.log('ROE:', roeNum);
     
     // 비율 객체 반환 (워치리스트 업데이트용)
     return {
@@ -473,7 +642,19 @@ function displayFeaturedCompanies(companies) {
 }
 
 // 특정 기업 데이터 로드
-function loadCompanyData(corpName, corpCode) {
+async function loadCompanyData(corpName, corpCode) {
+    // 기업명 유효성 검증 (레이아웃 전환 전에 체크)
+    if (!corpName || !isValidCompanyName(corpName)) {
+        showError('올바른 기업명을 입력해주세요.\n한글, 영문, 숫자만 가능합니다.');
+        return;
+    }
+    
+    // 상장 기업 여부 확인
+    if (!isListedCompany(corpName)) {
+        showError('상장되지 않은 기업명입니다.\n코스피 또는 코스닥에 상장된 기업명을 입력해주세요.');
+        return;
+    }
+    
     elements.corpName.value = corpName;
     const bsnsYear = elements.bsnsYear.value;
     const reprtCode = elements.reprtCode.value;
@@ -483,12 +664,13 @@ function loadCompanyData(corpName, corpCode) {
     document.getElementById('resultLayout').classList.remove('hidden');
     
     // 결과 페이지 검색 폼에도 값 동기화
-    syncSearchForms(corpName, '', bsnsYear, reprtCode);
+    syncSearchForms(corpName, corpCode, bsnsYear, reprtCode);
 
     showLoading(true);
     elements.resultSection.classList.add('hidden');
     elements.errorMessage.classList.add('hidden');
 
+    // CORS 문제로 인해 샘플 데이터 사용 (기업별로 다른 데이터 생성)
     setTimeout(() => {
         const data = generateSampleData(corpName, bsnsYear);
         displayFinancialData(data);
@@ -497,15 +679,22 @@ function loadCompanyData(corpName, corpCode) {
 }
 
 // 결과 페이지에서 검색
-function searchFinancialDataFromResult() {
-    if (!apiKey) {
-        showError('먼저 API 키를 저장해주세요.');
-        return;
-    }
-
+async function searchFinancialDataFromResult() {
     const corpName = elements.corpName2.value.trim();
+    
     if (!corpName) {
         showError('기업명을 입력해주세요.');
+        return;
+    }
+    
+    if (!isValidCompanyName(corpName)) {
+        showError('올바른 기업명을 입력해주세요. (한글, 영문, 숫자만 가능)');
+        return;
+    }
+    
+    // 상장 기업 여부 확인
+    if (!isListedCompany(corpName)) {
+        showError('상장되지 않은 기업명입니다.\n코스피 또는 코스닥에 상장된 기업명을 입력해주세요.');
         return;
     }
 
@@ -521,6 +710,7 @@ function searchFinancialDataFromResult() {
     elements.resultSection.classList.add('hidden');
     elements.errorMessage.classList.add('hidden');
 
+    // CORS 문제로 인해 샘플 데이터 사용 (기업별로 다른 데이터 생성)
     setTimeout(() => {
         const data = generateSampleData(corpName, bsnsYear);
         displayFinancialData(data);
@@ -1013,11 +1203,11 @@ function calculateInvestmentMetrics() {
     
     // 투자 지표를 currentCompanyData에 저장
     if (currentCompanyData) {
-        currentCompanyData.per = metrics.per.value;
-        currentCompanyData.pbr = metrics.pbr.value;
-        currentCompanyData.psr = metrics.psr.value;
-        currentCompanyData.evToEbitda = metrics.evToEbitda.value;
-        currentCompanyData.dividendYield = metrics.dividendYield.value;
+        currentCompanyData.per = metrics.per;
+        currentCompanyData.pbr = metrics.pbr;
+        currentCompanyData.psr = metrics.psr;
+        currentCompanyData.evToEbitda = metrics.evToEbitda;
+        currentCompanyData.dividendYield = metrics.dividendYield;
     }
     
     // 건전성 점수 재계산
@@ -1171,16 +1361,43 @@ function calculateAndDisplayHealthScore() {
     // 투자 지표가 계산되어 있는지 확인
     const hasInvestmentMetrics = currentCompanyData.per !== undefined;
     
-    // 건전성 점수 계산
+    // 실제 재무 데이터 추출
+    const revenue = currentFinancialData['매출액'] || 0;
+    const operatingIncome = currentFinancialData['영업이익'] || 0;
+    const totalAssets = currentFinancialData['자산총계'] || 0;
+    const equity = currentFinancialData['자본총계'] || 0;
+    
+    // 영업이익률 계산
+    const operatingMargin = revenue > 0 ? (operatingIncome / revenue) * 100 : 0;
+    
+    // 자산 증가율 추정 (ROE 기반)
+    const roe = currentCompanyData.roe || 0;
+    const assetGrowth = roe > 0 ? roe * 0.5 : 0;  // 보수적 추정
+    
+    // 건전성 점수 계산 - 실제 재무 데이터 포함
     const healthData = {
+        // 기본 비율
         roe: currentCompanyData.roe || 0,
         debtRatio: currentCompanyData.debtRatio || 0,
         currentRatio: currentCompanyData.currentRatio || 0,
+        
+        // 투자 지표
         per: hasInvestmentMetrics ? currentCompanyData.per : 0,
-        pbr: hasInvestmentMetrics ? currentCompanyData.pbr : 0
+        pbr: hasInvestmentMetrics ? currentCompanyData.pbr : 0,
+        
+        // 실제 재무 데이터
+        operatingMargin: operatingMargin,
+        assetGrowth: assetGrowth,
+        revenue: revenue,
+        operatingIncome: operatingIncome,
+        totalAssets: totalAssets,
+        equity: equity
     };
     
+    console.log('건전성 점수 계산 데이터:', healthData);
+    
     const healthScore = FinancialHealth.calculateHealthScore(healthData);
+    console.log('건전성 점수 결과:', healthScore);
     
     // 섹션 표시
     healthSection.style.display = 'block';
