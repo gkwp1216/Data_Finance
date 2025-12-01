@@ -1,0 +1,32 @@
+[build]
+  # 정적 파일을 배포할 폴더(루트라면 ".")
+  publish = "."
+  # Netlify Functions 디렉터리
+  functions = "netlify/functions"
+
+# DART 기업코드 프록시 함수로 리다이렉트
+[[redirects]]
+  from = "/api/proxy/dart-corpcode"
+  to = "/.netlify/functions/dart-corpcode"
+  status = 200
+
+# SPA라면 새로고침 시 index.html로 포워드(필요할 때만 유지)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = true
+
+# CORS/캐시 등 헤더 예시(필요 시)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Cache-Control = "public, max-age=3600"
+
+# 개발/배포 환경 공통 설정(옵션)
+[dev]
+  command = ""   # 로컬 빌드 커맨드가 있으면 지정
+  targetPort = 8888
+
+# 환경변수는 Netlify 대시보드에서 설정(DART_API_KEY 등)
