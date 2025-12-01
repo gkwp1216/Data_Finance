@@ -1,7 +1,5 @@
 [build]
-  # 정적 파일을 배포할 폴더(루트라면 ".")
   publish = "."
-  # Netlify Functions 디렉터리
   functions = "netlify/functions"
 
 # DART 기업코드 프록시 함수로 리다이렉트
@@ -10,22 +8,17 @@
   to = "/.netlify/functions/dart-corpcode"
   status = 200
 
-# 정적 파일(CSS/JS/이미지) 우선, 없으면 index.html로 폴백
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  # force = true 제거 (정적 파일 우선)
-
-# CORS/캐시 등 헤더 예시
+# 정적 파일 캐시 설정
 [[headers]]
   for = "/*.css"
   [headers.values]
+    Content-Type = "text/css"
     Cache-Control = "public, max-age=31536000"
     
 [[headers]]
   for = "/*.js"
   [headers.values]
+    Content-Type = "application/javascript"
     Cache-Control = "public, max-age=31536000"
 
 # 개발/배포 환경 공통 설정(옵션)
