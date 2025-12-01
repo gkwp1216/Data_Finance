@@ -36,7 +36,10 @@
                     <div class="search-form">
                         <div class="form-group">
                             <label for="corpName">기업명</label>
-                            <input type="text" id="corpName" placeholder="예: 삼성전자" />
+                            <div class="autocomplete-wrapper">
+                                <input type="text" id="corpName" placeholder="예: 삼성전자" autocomplete="off" />
+                                <div id="autocompleteList" class="autocomplete-list hidden"></div>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="bizrNo">사업자등록번호 (선택)</label>
@@ -167,7 +170,7 @@
                     </div>
                     <div class="stock-input-grid">
                         <div class="form-group">
-                            <label for="stockPrice">현재 주가 (원)</label>
+                            <label for="stockPrice">현재 주가 (원) <span id="stockPriceDate" style="font-size: 0.85em; color: #888; font-weight: normal;"></span></label>
                             <input type="number" id="stockPrice" placeholder="예: 75000" />
                         </div>
                         <div class="form-group">
@@ -385,15 +388,9 @@
                 </div>
             </div>
 
-            <!-- 뉴스 & 공시 섹션 -->
+            <!-- 뉴스 섹션 -->
             <div class="card">
-                <h2>📰 관련 뉴스 & 공시</h2>
-                
-                <!-- 탭 메뉴 -->
-                <div class="news-tabs">
-                    <button type="button" class="news-tab active" data-tab="news">뉴스</button>
-                    <button type="button" class="news-tab" data-tab="disclosure">공시</button>
-                </div>
+                <h2>📰 관련 뉴스</h2>
 
                 <!-- 뉴스 피드 -->
                 <div id="newsTab" class="news-content active">
@@ -401,16 +398,6 @@
                         <div class="news-loading">
                             <div class="spinner"></div>
                             <p>뉴스를 불러오는 중...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 공시 정보 -->
-                <div id="disclosureTab" class="news-content">
-                    <div id="disclosureList" class="news-list">
-                        <div class="news-loading">
-                            <div class="spinner"></div>
-                            <p>공시 정보를 불러오는 중...</p>
                         </div>
                     </div>
                 </div>
@@ -512,6 +499,7 @@
         </div>
     </footer>
 
+    <script src="company-list-api.js"></script>
     <script src="watchlist.js"></script>
     <script src="investment-metrics.js"></script>
     <script src="financial-health.js"></script>

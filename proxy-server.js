@@ -46,6 +46,32 @@ app.post('/api/proxy/naver-news', async (req, res) => {
     }
 });
 
+// DART 기업 목록 API 프록시 엔드포인트
+app.get('/api/proxy/dart-corpcode', async (req, res) => {
+    try {
+        const apiKey = req.query.crtfc_key || 'a840a5ad65e360f78621fc44725022e66f951d3659cea20e297a7a1b21e2929a';
+        
+        console.log(`DART 기업 목록 다운로드 요청`);
+        
+        const response = await axios.get('https://opendart.fss.or.kr/api/corpCode.xml', {
+            params: {
+                crtfc_key: apiKey
+            },
+            responseType: 'text'
+        });
+        
+        console.log(`✅ DART 기업 목록을 다운로드했습니다.`);
+        res.set('Content-Type', 'application/xml');
+        res.send(response.data);
+    } catch (error) {
+        console.error('❌ DART API 오류:', error.response?.data || error.message);
+        res.status(500).json({ 
+            error: '기업 목록을 불러올 수 없습니다.',
+            message: error.message 
+        });
+    }
+});
+
 // 서버 상태 확인 엔드포인트
 app.get('/health', (req, res) => {
     res.json({ 

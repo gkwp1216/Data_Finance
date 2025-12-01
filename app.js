@@ -72,6 +72,12 @@ function init() {
 
     // 대표 기업 목록 자동 로드
     loadFeaturedCompanies();
+    
+    // 기업 목록 미리 로드 (백그라운드)
+    loadCompanyListInBackground();
+    
+    // 자동완성 이벤트 리스너
+    setupAutocomplete();
 }
 
 // API 키 저장
@@ -168,21 +174,193 @@ function showError(message) {
     document.getElementById('errorModalBtn').addEventListener('click', closeModal);
 }
 
-// 한국 주요 상장기업 목록 (코스피, 코스닥)
-const LISTED_COMPANIES = [
-    '삼성전자', 'SK하이닉스', 'LG에너지솔루션', '삼성바이오로직스', '현대차',
-    '기아', 'POSCO홀딩스', '삼성물산', 'NAVER', '카카오',
-    'LG화학', '현대모비스', '삼성SDI', '기업은행', 'KB금융',
-    '신한지주', '하나금융지주', 'LG전자', '포스코퓨처엠', '셀트리온',
-    'SK이노베이션', 'SK텔레콤', 'KT&G', '삼성생명', '한국전력',
-    'LG', '두산에너빌리티', '고려아연', 'HMM', '대한항공',
-    'SK', 'HD현대중공업', '삼성화재', 'HD한국조선해양', '메리츠금융지주',
-    '크래프톤', '엔씨소프트', '넷마블', '펄어비스', '컴투스',
-    '삼성전기', 'LG디스플레이', '에코프로비엠', '에코프로', 'SK스퀘어',
-    'CJ제일제당', '한화에어로스페이스', '한온시스템', 'HD현대일렉트릭', '롯데케미칼',
-    '하이브', 'JYP Ent.', 'SM', 'YG', '빅히트',
-    '카카오뱅크', '카카오페이', '토스', '쿠팡', '배달의민족',
-];
+// =====================================================
+// 기업 목록 및 자동완성 기능
+// =====================================================
+
+// 기업 목록 백그라운드 로딩
+async function loadCompanyListInBackground() {
+    try {
+        console.log('📥 기업 목록 백그라운드 로딩 시작...');
+        await CompanyListAPI.getCompanyList();
+        console.log('✅ 기업 목록 로딩 완료');
+    } catch (error) {
+        console.error('⚠️ 기업 목록 로딩 실패:', error);
+    }
+}
+
+// 자동완성 설정
+let autocompleteTimeout = null;
+let currentAutocompleteIndex = -1;
+
+function setupAutocomplete() {
+    const corpNameInput = elements.corpName;
+    const autocompleteList = document.getElementById('autocompleteList');
+    
+    if (!corpNameInput || !autocompleteList) return;
+    
+    // 입력 이벤트
+    corpNameInput.addEventListener('input', async (e) => {
+        const query = e.target.value.trim();
+        
+        // 디바운싱
+        clearTimeout(autocompleteTimeout);
+        
+        if (query.length < 1) {
+            hideAutocomplete();
+            return;
+        }
+        
+        autocompleteTimeout = setTimeout(async () => {
+            await showAutocomplete(query);
+        }, 300);
+    });
+    
+    // 키보드 이벤트 (화살표, Enter)
+    corpNameInput.addEventListener('keydown', (e) => {
+        const items = autocompleteList.querySelectorAll('.autocomplete-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentAutocompleteIndex = Math.min(currentAutocompleteIndex + 1, items.length - 1);
+            updateAutocompleteSelection(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentAutocompleteIndex = Math.max(currentAutocompleteIndex - 1, -1);
+            updateAutocompleteSelection(items);
+        } else if (e.key === 'Enter' && currentAutocompleteIndex >= 0) {
+            e.preventDefault();
+            items[currentAutocompleteIndex].click();
+        } else if (e.key === 'Escape') {
+            hideAutocomplete();
+        }
+    });
+    
+    // 외부 클릭 시 닫기
+    document.addEventListener('click', (e) => {
+        if (!corpNameInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+            hideAutocomplete();
+        }
+    });
+}
+
+// 자동완성 목록 표시
+async function showAutocomplete(query) {
+    const autocompleteList = document.getElementById('autocompleteList');
+    if (!autocompleteList) return;
+    
+    try {
+        const companies = await CompanyListAPI.searchCompanies(query);
+        
+        if (companies.length === 0) {
+            hideAutocomplete();
+            return;
+        }
+        
+        autocompleteList.innerHTML = '';
+        currentAutocompleteIndex = -1;
+        
+        companies.forEach((company, index) => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.innerHTML = `
+                <span class="autocomplete-item-name">${company.corpName}</span>
+                <span class="autocomplete-item-code">${company.stockCode}</span>
+            `;
+            
+            item.addEventListener('click', () => {
+                selectCompany(company);
+            });
+            
+            autocompleteList.appendChild(item);
+        });
+        
+        autocompleteList.classList.remove('hidden');
+    } catch (error) {
+        console.error('자동완성 오류:', error);
+        hideAutocomplete();
+    }
+}
+
+// 자동완성 숨기기
+function hideAutocomplete() {
+    const autocompleteList = document.getElementById('autocompleteList');
+    if (autocompleteList) {
+        autocompleteList.classList.add('hidden');
+        currentAutocompleteIndex = -1;
+    }
+}
+
+// 자동완성 선택 업데이트
+function updateAutocompleteSelection(items) {
+    items.forEach((item, index) => {
+        if (index === currentAutocompleteIndex) {
+            item.classList.add('active');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+// 기업 선택
+function selectCompany(company) {
+    elements.corpName.value = company.corpName;
+    hideAutocomplete();
+}
+
+// 유사 기업 선택 모달 표시
+function showSimilarCompaniesModal(searchedName, similarCompanies) {
+    // 모달 생성
+    const modal = document.createElement('div');
+    modal.className = 'similar-companies-modal';
+    modal.innerHTML = `
+        <div class="similar-companies-content">
+            <div class="similar-companies-header">
+                <h3>🔍 이 기업을 찾으시나요?</h3>
+                <p>"<strong>${searchedName}</strong>"와(과) 유사한 기업명</p>
+            </div>
+            <div class="similar-companies-list">
+                ${similarCompanies.map(company => `
+                    <div class="similar-company-item" data-corp-name="${company.corpName}">
+                        <div class="similar-company-info">
+                            <div class="similar-company-name">${company.corpName}</div>
+                            <div class="similar-company-code">종목코드: ${company.stockCode}</div>
+                        </div>
+                        <div class="similar-company-icon">→</div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel">취소</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 이벤트 리스너
+    modal.querySelectorAll('.similar-company-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const corpName = item.dataset.corpName;
+            elements.corpName.value = corpName;
+            modal.remove();
+            // 자동으로 검색 실행
+            searchFinancialData();
+        });
+    });
+    
+    modal.querySelector('.btn-cancel').addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    // 배경 클릭 시 닫기
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
 
 // 재무정보 검색
 // 기업명 유효성 검증
@@ -199,15 +377,11 @@ function isValidCompanyName(name) {
     return true;
 }
 
-// 상장 기업 여부 확인
-function isListedCompany(name) {
+// 상장 기업 여부 확인 (API 기반)
+async function isListedCompany(name) {
     const normalizedName = name.trim();
-    // 정확한 매칭 또는 부분 매칭
-    return LISTED_COMPANIES.some(company => 
-        company === normalizedName || 
-        company.includes(normalizedName) ||
-        normalizedName.includes(company)
-    );
+    const company = await CompanyListAPI.findExactCompany(normalizedName);
+    return company !== undefined;
 }
 
 async function searchFinancialData() {
@@ -228,10 +402,21 @@ async function searchFinancialData() {
         return;
     }
     
-    // 상장 기업 여부 확인
-    if (!isListedCompany(corpName)) {
-        showError('상장되지 않은 기업명입니다.\n코스피 또는 코스닥에 상장된 기업명을 입력해주세요.');
-        return;
+    // 정확한 기업명 찾기
+    const exactCompany = await CompanyListAPI.findExactCompany(corpName);
+    
+    if (!exactCompany) {
+        // 유사한 기업명 찾기
+        const similarCompanies = await CompanyListAPI.findSimilarCompanies(corpName);
+        
+        if (similarCompanies.length > 0) {
+            // 유사 기업 선택 모달 표시
+            showSimilarCompaniesModal(corpName, similarCompanies);
+            return;
+        } else {
+            showError('상장되지 않은 기업명입니다.\n코스피 또는 코스닥에 상장된 기업명을 정확히 입력해주세요.');
+            return;
+        }
     }
 
     const bsnsYear = elements.bsnsYear.value;
@@ -428,11 +613,9 @@ function displayFinancialData(data) {
         }
     }
     
-    // 뉴스 및 공시 로드
+    // 뉴스 로드
     if (currentCompanyData && currentCompanyData.corpName) {
         loadNews(currentCompanyData.corpName);
-        // 공시는 기업 코드가 있을 때만 로드 (현재는 샘플 데이터 사용)
-        loadDisclosure(currentCompanyData.corpCode || '00000000');
     }
     
     // 재무 건전성 점수 계산 및 표시
@@ -1098,6 +1281,31 @@ function initInvestmentMetrics() {
 }
 
 // 주식 데이터 자동 불러오기
+// 날짜 차이 계산 (영업일 기준이 아닌 실제 날짜 차이)
+function calculateDaysAgo(dateString) {
+    try {
+        // dateString 형식: YYYYMMDD (예: 20241201)
+        const year = parseInt(dateString.substring(0, 4));
+        const month = parseInt(dateString.substring(4, 6)) - 1; // 월은 0부터 시작
+        const day = parseInt(dateString.substring(6, 8));
+        
+        const targetDate = new Date(year, month, day);
+        const today = new Date();
+        
+        // 시간을 0으로 설정하여 날짜만 비교
+        today.setHours(0, 0, 0, 0);
+        targetDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = today - targetDate;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        return diffDays;
+    } catch (error) {
+        console.error('날짜 계산 오류:', error);
+        return 0;
+    }
+}
+
 async function loadStockDataAutomatically() {
     if (!currentCompanyData) {
         return;
@@ -1127,6 +1335,24 @@ async function loadStockDataAutomatically() {
         if (stockInfo.stockPrice && stockPriceInput) {
             stockPriceInput.value = Math.round(stockInfo.stockPrice);
             console.log('주가 입력:', stockInfo.stockPrice);
+            
+            // 주가 기준일자 표시
+            if (stockInfo.priceDate) {
+                const daysAgo = calculateDaysAgo(stockInfo.priceDate);
+                const stockPriceDateSpan = document.getElementById('stockPriceDate');
+                if (stockPriceDateSpan) {
+                    if (daysAgo === 0) {
+                        stockPriceDateSpan.textContent = '(당일 종가)';
+                        stockPriceDateSpan.style.color = '#00c853';
+                    } else if (daysAgo === 1) {
+                        stockPriceDateSpan.textContent = '(1일 전 종가)';
+                        stockPriceDateSpan.style.color = '#ff9800';
+                    } else {
+                        stockPriceDateSpan.textContent = `(${daysAgo}일 전 종가)`;
+                        stockPriceDateSpan.style.color = '#f44336';
+                    }
+                }
+            }
         }
 
         if (stockInfo.totalShares && totalSharesInput) {
@@ -1522,28 +1748,7 @@ function getRatingClass(rating) {
 
 // 뉴스 초기화
 function initNews() {
-    // 탭 전환 이벤트
-    const newsTabs = document.querySelectorAll('.news-tab');
-    newsTabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const tabName = tab.dataset.tab;
-            switchNewsTab(tabName);
-        });
-    });
-}
-
-// 뉴스 탭 전환
-function switchNewsTab(tabName) {
-    // 탭 버튼 활성화
-    document.querySelectorAll('.news-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.tab === tabName);
-    });
-    
-    // 콘텐츠 표시
-    document.getElementById('newsTab').classList.toggle('active', tabName === 'news');
-    document.getElementById('disclosureTab').classList.toggle('active', tabName === 'disclosure');
+    // 뉴스 기능 초기화 (탭 기능 제거됨)
 }
 
 // 뉴스 로드
@@ -1581,63 +1786,6 @@ function displayNews(news) {
                 <a href="${item.link}" class="news-link" target="_blank">
                     자세히 보기 →
                 </a>
-            </div>
-        </div>
-    `).join('');
-}
-
-// 공시 로드
-async function loadDisclosure(corpCode) {
-    const disclosureList = document.getElementById('disclosureList');
-    disclosureList.innerHTML = '<div class="news-loading"><div class="spinner"></div><p>공시 정보를 불러오는 중...</p></div>';
-    
-    try {
-        // 최근 3개월 공시 조회
-        const endDate = new Date();
-        const beginDate = new Date();
-        beginDate.setMonth(beginDate.getMonth() - 3);
-        
-        const endDateStr = endDate.toISOString().slice(0, 10).replace(/-/g, '');
-        const beginDateStr = beginDate.toISOString().slice(0, 10).replace(/-/g, '');
-        
-        const disclosure = await NewsAPI.searchDartDisclosure(corpCode, beginDateStr, endDateStr);
-        displayDisclosure(disclosure);
-    } catch (error) {
-        console.error('공시 로드 실패:', error);
-        disclosureList.innerHTML = '<div class="news-empty"><div class="news-empty-icon">📋</div><p>공시 정보를 불러올 수 없습니다.</p></div>';
-    }
-}
-
-// 공시 표시
-function displayDisclosure(disclosure) {
-    const disclosureList = document.getElementById('disclosureList');
-    
-    if (!disclosure || disclosure.length === 0) {
-        disclosureList.innerHTML = '<div class="news-empty"><div class="news-empty-icon">📋</div><p>최근 공시가 없습니다.</p></div>';
-        return;
-    }
-    
-    const typeIcons = {
-        financial: '📊',
-        dividend: '💰',
-        capital: '💵',
-        merger: '🤝',
-        disclosure: '📢',
-        other: '📄'
-    };
-    
-    disclosureList.innerHTML = disclosure.map(item => `
-        <div class="disclosure-item" onclick="window.open('${item.link}', '_blank')">
-            <div class="disclosure-type ${item.type}">
-                ${typeIcons[item.type] || typeIcons.other}
-            </div>
-            <div class="disclosure-content">
-                <h3 class="disclosure-title">${item.title}</h3>
-                <div class="disclosure-meta">
-                    <span>${item.corpName}</span>
-                    <span>${item.date}</span>
-                    <span>${item.source}</span>
-                </div>
             </div>
         </div>
     `).join('');
